@@ -9,88 +9,16 @@ export class TriangleMesh {
     triangles: Triangle[];
     surface: BezierSurface;
 
-    constructor(precision: number, surface: BezierSurface, isSphere: boolean) {
+    constructor(precision: number, surface: BezierSurface) {
         this.size = 1;
         this.precision = precision;
         this.triangles = [];
         this.surface = surface;
-        this.construct(this.precision,isSphere);
+        this.construct(this.precision);
     }
 
-    construct(precision: number, isSphere: boolean) {
-        if(isSphere) {
-            this.constructSphere(precision);
-        } else {
-            this.constructBezier(precision);
-        }
-    }
-
-    constructSphere(precision: number): void {
-        this.triangles = [];
-        this.precision = precision;
-        var radius: number = 0.5;
-        var edgeLenght: number = this.size/this.precision;
-
-        for(let i=0; i<this.precision; i++) {
-            for(let j=0; j<this.precision; j++) {
-
-                // north west vertex
-                var nwX = edgeLenght * j;
-                var nwY = edgeLenght * i; 
-                // south west vertex
-                var swX = nwX
-                var swY = edgeLenght * (i+1); 
-                // south east vertex
-                var soX = edgeLenght * (j+1);
-                var soY = swY;
-                // north east vertex
-                var neX = soX;
-                var neY = nwY;
-
-                var p1 = new Vertex(nwX, nwY, this.surface.S(nwX,nwY));
-                p1.setdU(this.surface.dU(nwX,nwY));
-                p1.setdV(this.surface.dV(nwX,nwY));
-                p1.setNormal(Vec3.getSphereNormal(p1,radius));
-                p1.normal?.normalize();
-
-                var p2 = new Vertex(swX, swY, this.surface.S(swX,swY));
-                p2.setdU(this.surface.dU(swX,swY));
-                p2.setdV(this.surface.dV(swX,swY));
-                p2.setNormal(Vec3.getSphereNormal(p2,radius));
-                p2.normal?.normalize();
-
-                var p3 = new Vertex(soX, soY, this.surface.S(soX,soY));
-                p3.setdU(this.surface.dU(soX,soY));
-                p3.setdV(this.surface.dV(soX,soY));
-                p3.setNormal(Vec3.getSphereNormal(p3,radius));
-                p3.normal?.normalize();
-
-                var tLow = new Triangle(p1,p2,p3);
-                this.triangles.push(tLow);
-
-                var p4 = new Vertex(nwX, nwY, this.surface.S(nwX,nwY));
-                p4.setdU(this.surface.dU(nwX,nwY));
-                p4.setdV(this.surface.dV(nwX,nwY));
-                p4.setNormal(Vec3.getSphereNormal(p4,radius));
-                p4.normal?.normalize();
-
-                var p5 = new Vertex(neX, neY, this.surface.S(neX,neY));
-                p5.setdU(this.surface.dU(neX,neY));
-                p5.setdV(this.surface.dV(neX,neY));
-                p5.setNormal(Vec3.getSphereNormal(p5,radius));
-                p5.normal?.normalize();
-
-                var p6 = new Vertex(soX, soY, this.surface.S(soX,soY));
-                p6.setdU(this.surface.dU(soX,soY));
-                p6.setdV(this.surface.dV(soX,soY));
-                p6.setNormal(Vec3.getSphereNormal(p6,radius));
-                p6.normal?.normalize();
-
-                var tHigh = new Triangle(p4,p5,p6);
-                this.triangles.push(tHigh);
-            
-            }
-        }
+    construct(precision: number) {
+        this.constructBezier(precision);
     }
 
     constructBezier(precision: number): void {

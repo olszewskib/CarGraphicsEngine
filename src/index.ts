@@ -19,7 +19,7 @@ if(precisionSlider == null || zSlider == null)
 
 precisionSlider.addEventListener("input", function() {
     precision = parseInt(precisionSlider.value,10);
-    mesh.construct(precision,isSphere);
+    mesh.construct(precision);
     triangleVertices = getVertices(mesh);
     triangleNormals = getNormals(mesh);
     triangleTangents = getTangents(mesh);
@@ -41,7 +41,7 @@ zSlider.addEventListener("input", function() {
             cell.textContent = zSlider.value;
         }
     }
-    mesh.construct(precision,isSphere);
+    mesh.construct(precision);
     triangleVertices = getVertices(mesh);
     triangleNormals = getNormals(mesh);
     triangleTangents = getTangents(mesh);
@@ -247,53 +247,18 @@ stopAnimationButton.addEventListener("click", function() {
     cancelAnimationFrame(animationID);
 })
 
-// sphere ui
-var sphereCheckBox = document.getElementById("sphereCheckBox") as HTMLInputElement;
-if(sphereCheckBox == null) {
-    throw new Error("sphererCheckBox");
-}
-
-sphereCheckBox.addEventListener("input", function() {
-    if(sphereCheckBox.checked) {
-        isSphere = true;
-    } else {
-        isSphere = false;
-    }
-    mesh.construct(precision,isSphere);
-    triangleVertices = getVertices(mesh);
-    triangleNormals = getNormals(mesh);
-    triangleTangents = getTangents(mesh);
-    rgbTriangleColors = getColors(mesh,meshColorVector);
-    textureCoords = getTexture(mesh);
-    drawTriangles(0,true);
-})
-
-// rotation ui
-var zRotationSlider = document.getElementById("rotationZ") as HTMLInputElement;
-if(zRotationSlider == null) {
-    throw new Error("rotation error");
-}
-
-var ValueRotation = parseInt(zRotationSlider.value);
-
-zRotationSlider.addEventListener("input", function() {
-    ValueRotation = parseInt(zRotationSlider.value);
-    drawTriangles(0,true);
-})
 
 // ------------------------------------------------------------------------- Code Below ------------------------------------------------------------------------
 
-// Sphere
-var isSphere = false;
 
 // Bezier Surface 
 const surface = new BezierSurface();
-surface.setControlPointZValue(1,1,0.7);
-surface.setControlPointZValue(3,2,0.7);
+//surface.setControlPointZValue(1,1,0.7);
+//surface.setControlPointZValue(3,2,0.7);
 
 // Triangle Mesh
 var precision: number = 60;
-const mesh = new TriangleMesh(precision,surface,isSphere);
+const mesh = new TriangleMesh(precision,surface);
 
 var triangleVertices = getVertices(mesh);
 var triangleNormals = getNormals(mesh);
@@ -366,7 +331,6 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
         var delta = now-then;
         then = now;
         lightLocation.rotate(deg2rad(rotationSpeed * delta),500,500);
-        ValueRotation = (ValueRotation + 1) % 360;
     }
 
     if(!gl) {
@@ -386,6 +350,7 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
     // Output merger (how to apply an updated pixel to the output image)
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
+
     gl.clearColor(0.08, 0.08, 0.08, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -486,11 +451,9 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
     var viewProjectionMatrix = M4.multiply(viewMatrix,projectionMatrix);
 
     // This matrix takes the vertices of the model and moved them to the world space, so basicly it determines where things are
-    var modelMatrix = M4.scaling(1000,1000,1000);
-
-    var rotationMatirx = M4.rotationZ(deg2rad(ValueRotation));
-    
-    modelMatrix = M4.multiply(rotationMatirx,modelMatrix);
+    var modelMatrix = M4.scaling(1000,2000,1000);
+    var translationMatrix = M4.translation(1000,-1000,0);
+    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
 
     // This matix first moves our obj <worldMatrix> then when it is set it moves it in front of the camera <viewMatix> and lastly clips it into space <projectionMatrix>
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,viewProjectionMatrix);
@@ -514,17 +477,12 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
 
     ////////////////////// 2nd Surface ///////////////////////////////
     
-    // This matrix first moves the object in front of the camera <vievMatrix> and then clips it into space <projectionMatrix>
-    var viewProjectionMatrix = M4.multiply(viewMatrix,projectionMatrix);
+    var modelMatrix = M4.scaling(1000,2000,1000);
+    var rotationMatrix = M4.rotationZ(deg2rad(90));
+    var translationMatrix = M4.translation(1000,1000,0);
+    translationMatrix = M4.multiply(rotationMatrix, translationMatrix);
+    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
 
-    // This matrix takes the vertices of the model and moved them to the world space, so basicly it determines where things are
-    var modelMatrix = M4.scaling(1000,1000,1000);
-
-    var rotationMatirx = M4.rotationX(deg2rad(ValueRotation * 2));
-    
-    modelMatrix = M4.multiply(rotationMatirx,modelMatrix);
-
-    // This matix first moves our obj <worldMatrix> then when it is set it moves it in front of the camera <viewMatix> and lastly clips it into space <projectionMatrix>
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,viewProjectionMatrix);
 
     gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
@@ -532,19 +490,29 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
     
     gl.drawArrays(gl.TRIANGLES, 0, mesh.triangles.length * 3);
 
-    ////////////// 3rd surface //////////////////////
+    ////////////////////// 3nd Surface ///////////////////////////////
 
-    // This matrix first moves the object in front of the camera <vievMatrix> and then clips it into space <projectionMatrix>
-    var viewProjectionMatrix = M4.multiply(viewMatrix,projectionMatrix);
+    var modelMatrix = M4.scaling(1000,2000,1000);
+    var rotationMatrix = M4.rotationZ(deg2rad(180));
+    var translationMatrix = M4.translation(-1000,1000,0);
+    translationMatrix = M4.multiply(rotationMatrix, translationMatrix);
+    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
 
-    // This matrix takes the vertices of the model and moved them to the world space, so basicly it determines where things are
-    var modelMatrix = M4.scaling(1000,1000,1000);
+    var worldViewProjectionMatrix = M4.multiply(modelMatrix,viewProjectionMatrix);
 
-    var rotationMatirx = M4.rotationY(deg2rad(ValueRotation * 3));
+    gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
+    gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix.convert());
     
-    modelMatrix = M4.multiply(rotationMatirx,modelMatrix);
+    gl.drawArrays(gl.TRIANGLES, 0, mesh.triangles.length * 3);
 
-    // This matix first moves our obj <worldMatrix> then when it is set it moves it in front of the camera <viewMatix> and lastly clips it into space <projectionMatrix>
+    ////////////////////// 4nd Surface ///////////////////////////////
+
+    var modelMatrix = M4.scaling(1000,2000,1000);
+    var rotationMatrix = M4.rotationZ(deg2rad(270));
+    var translationMatrix = M4.translation(-1000,-1000,0);
+    translationMatrix = M4.multiply(rotationMatrix, translationMatrix);
+    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
+
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,viewProjectionMatrix);
 
     gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());

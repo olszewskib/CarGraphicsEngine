@@ -20,10 +20,6 @@ export class Vec3 {
         return new Vec3(x,y,z);
     }
 
-    static getSphereNormal(v: Vertex, r: number) {
-        return new Vec3(v.x-r,v.y-r,v.z);
-    }
-
     static subtractVectors(v: Vec3, u: Vec3): Vec3 {
         var x: number = v.v1 - u.v1;
         var y: number = v.v2 - u.v2;
