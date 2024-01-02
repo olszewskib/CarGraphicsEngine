@@ -1,4 +1,4 @@
-import type { Point3D } from "src/models/bezier/BezierSurface";
+import type { Point3D } from "src/models/bezier/BezierSurfaceModel";
 
 export class Vec3 {
     v1: number;

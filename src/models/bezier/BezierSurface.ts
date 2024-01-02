@@ -1,128 +1,201 @@
 import { Vec3 } from "../math/vec3";
-
-export type Point3D = {
-    x: number;
-    y: number;
-    z: number;
-};
+import { Vertex } from "./vertex";
+import { Triangle } from "./triangle";
+import { BezierSurfaceModel } from "./BezierSurfaceModel";
 
 export class BezierSurface {
-    readonly degree = 3;
-    controlPoints: Point3D[][];
+    size: number;
+    precision: number;
+    triangles: Triangle[];
+    surface: BezierSurfaceModel;
 
-    constructor() {
-        this.controlPoints = [];
+    constructor(precision: number, surface: BezierSurfaceModel) {
+        this.size = 1;
+        this.precision = precision;
+        this.triangles = [];
+        this.surface = surface;
+        this.construct(this.precision);
+    }
 
-        var x:number = 0;
-        var y:number = 0;
-        var z:number = 0;
-        
-        for(var i:number =0; i <= this.degree; i++) {
-            this.controlPoints[i] = [];
-            for(var j:number = 0; j <= this.degree; j++) {
-                this.controlPoints[i][j] = {x: x, y: y, z: z};
-                x+=(1/this.degree);
+    construct(precision: number) {
+        this.constructBezier(precision);
+    }
+
+    constructBezier(precision: number): void {
+        this.triangles = [];
+        this.precision = precision;
+        var edgeLenght: number = this.size/this.precision;
+
+        for(let i=0; i<this.precision; i++) {
+            for(let j=0; j<this.precision; j++) {
+
+                // north west vertex
+                var nwX = edgeLenght * j;
+                var nwY = edgeLenght * i; 
+                // south west vertex
+                var swX = nwX
+                var swY = edgeLenght * (i+1); 
+                // south east vertex
+                var soX = edgeLenght * (j+1);
+                var soY = swY;
+                // north east vertex
+                var neX = soX;
+                var neY = nwY;
+
+                var p1 = new Vertex(nwX, nwY, this.surface.P(nwX,nwY));
+                p1.setdU(this.surface.dU(nwX,nwY));
+                p1.setdV(this.surface.dV(nwX,nwY));
+                p1.setNormal(Vec3.crossProduct(p1.dU,p1.dV));
+                p1.normal?.normalize();
+
+                var p2 = new Vertex(swX, swY, this.surface.P(swX,swY));
+                p2.setdU(this.surface.dU(swX,swY));
+                p2.setdV(this.surface.dV(swX,swY));
+                p2.setNormal(Vec3.crossProduct(p2.dU,p2.dV));
+                p2.normal?.normalize();
+
+                var p3 = new Vertex(soX, soY, this.surface.P(soX,soY));
+                p3.setdU(this.surface.dU(soX,soY));
+                p3.setdV(this.surface.dV(soX,soY));
+                p3.setNormal(Vec3.crossProduct(p3.dU,p3.dV));
+                p3.normal?.normalize();
+
+                var tLow = new Triangle(p1,p2,p3);
+                this.triangles.push(tLow);
+
+                var p4 = new Vertex(nwX, nwY, this.surface.P(nwX,nwY));
+                p4.setdU(this.surface.dU(nwX,nwY));
+                p4.setdV(this.surface.dV(nwX,nwY));
+                p4.setNormal(Vec3.crossProduct(p4.dU,p4.dV));
+                p4.normal?.normalize();
+
+                var p5 = new Vertex(neX, neY, this.surface.P(neX,neY));
+                p5.setdU(this.surface.dU(neX,neY));
+                p5.setdV(this.surface.dV(neX,neY));
+                p5.setNormal(Vec3.crossProduct(p5.dU,p5.dV));
+                p5.normal?.normalize();
+
+                var p6 = new Vertex(soX, soY, this.surface.P(soX,soY));
+                p6.setdU(this.surface.dU(soX,soY));
+                p6.setdV(this.surface.dV(soX,soY));
+                p6.setNormal(Vec3.crossProduct(p6.dU,p6.dV));
+                p6.normal?.normalize();
+
+                var tHigh = new Triangle(p4,p5,p6);
+                this.triangles.push(tHigh);
             }
-            x=0;
-            y+=(1/this.degree);
         }
     }
+}
 
-    setControlPointZValue(i: number, j: number, newZ: number) {
-        this.controlPoints[i][j].z = newZ;
-    }
+export function getNormals(mesh: BezierSurface): Float32Array {
 
-    static B(t: number, i: number): number {
-        switch(i) {
-            case 0:
-                return (1-t) * (1-t) * (1-t);
-            case 1:
-                return 3 * (1-t) * (1-t) * t;
-            case 2:
-                return 3 * (1-t) * t * t;
-            case 3:
-                return t * t * t;
-            default:
-                return 0;
-        }
-    }
+    var normals: number[] = new Array();
 
-    P(u: number, v: number): number {
-        var result:number = 0;
-
-        for(let i:number = 0; i<=this.degree; i++) {
-            for(let j:number = 0; j<=this.degree; j++) {
-                result += BezierSurface.B(u,i) * BezierSurface.B(v,j) * this.controlPoints[i][j].z;
-            }
-        }
-        return result;
-    }
-
-    S(u: number, v: number): number {
-        var radius: number = 0.5;
-        var xMiddle: number = 0.5;
-        var yMiddle: number = 0.5;
-
-        if( Math.sqrt( (xMiddle-u) * (xMiddle-u) + (yMiddle-v) * (yMiddle-v)) >= 0.5 ) return 0;
-
-        return Math.sqrt(radius * radius - (u - xMiddle) * (u - xMiddle) - (v - yMiddle) * (v - yMiddle));
-    }
-
-    static bezierCurve(points: Vec3[], t: number): Vec3 {
-        var result:Vec3 = new Vec3();
-        for(let i:number = 0; i<4; i++) {
-            result.add(Vec3.scale(points[i],BezierSurface.B(t,i)));
-        }
-        return result;   
-    }
-
-    dU(u: number, v:number): Vec3 {
-        var points: Vec3[] = [];
-        var curve: Vec3[] = [];
-
-        for(let i:number = 0; i<=this.degree; i++) {
-            var v0:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[0][i]);
-            var v1:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[1][i]);
-            var v2:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[2][i]);
-            var v3:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[3][i]);
-            points.push(v0,v1,v2,v3);
-
-            curve[i] = BezierSurface.bezierCurve(points,v);
-            points = [];
+    mesh.triangles.forEach( triangle => {
+        if(!triangle.p1.normal || !triangle.p2.normal || !triangle.p3.normal) {
+            throw new Error("VertexNormalIsUndefined");
         }
 
-        var result:Vec3 = new Vec3();
+        var p1 = triangle.p1.normal.getVec3ForBuffer();
+        normals.push(...p1)
+        var p2 = triangle.p2.normal.getVec3ForBuffer();
+        normals.push(...p2)
+        var p3 = triangle.p3.normal.getVec3ForBuffer();
+        normals.push(...p3)
+    })
 
-        result.add(Vec3.scale(curve[0],-3 * (1 - u) * (1 - u)));
-        result.add(Vec3.scale(curve[1],3 * (1 - u) * (1 - u) - 6 * u * (1 - u)));
-        result.add(Vec3.scale(curve[2],6 * u * (1 - u) - 3 * u * u));
-        result.add(Vec3.scale(curve[3],3 * u * u));
+    var cpuBuffer: Float32Array = new Float32Array(normals);
+    return cpuBuffer;
+}
 
-        return result;
-    }
+export function getTangents(mesh: BezierSurface): Float32Array {
+
+    var tangents: number[] = new Array();
+
+    mesh.triangles.forEach( triangle => {
+
+        var p1 = triangle.p1.dU.getVec3ForBuffer();
+        tangents.push(...p1)
+        var p2 = triangle.p2.dU.getVec3ForBuffer();
+        tangents.push(...p2)
+        var p3 = triangle.p3.dU.getVec3ForBuffer();
+        tangents.push(...p3)
+    })
+
+    var cpuBuffer: Float32Array = new Float32Array(tangents);
+    return cpuBuffer;
+}
+
+export function getBiTangents(mesh: BezierSurface): Float32Array {
+
+    var bitangents: number[] = new Array();
+
+    mesh.triangles.forEach( triangle => {
+
+        var p1 = triangle.p1.dV.getVec3ForBuffer();
+        bitangents.push(...p1)
+        var p2 = triangle.p2.dV.getVec3ForBuffer();
+        bitangents.push(...p2)
+        var p3 = triangle.p3.dV.getVec3ForBuffer();
+        bitangents.push(...p3)
+    })
+
+    var cpuBuffer: Float32Array = new Float32Array(bitangents);
+    return cpuBuffer;
+}
+export function getColors(mesh: BezierSurface, color?: Vec3): Uint8Array {
     
-    dV(u: number, v:number): Vec3 {
-        var points: Vec3[] = [];
-        var curve: Vec3[] = [];
+    var colors: number[] = new Array();
+    for(let i:number = 0; i<mesh.triangles.length; i++) {
 
-        for(let i:number = 0; i<=this.degree; i++) {
-            var v0:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[i][0]);
-            var v1:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[i][1]);
-            var v2:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[i][2]);
-            var v3:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[i][3]);
-            points.push(v0,v1,v2,v3);
-
-            curve[i] = BezierSurface.bezierCurve(points,u);
-            points = [];
+        if(typeof color == 'undefined') {
+            colors.push(255,0,0);
+            colors.push(0,255,0);
+            colors.push(0,0,255);
+        } else {
+            colors.push(...color.getVec3ForBuffer());
+            colors.push(...color.getVec3ForBuffer());
+            colors.push(...color.getVec3ForBuffer());
         }
 
-        var result:Vec3 = new Vec3();
-
-        result.add(Vec3.scale(curve[0],-3 * (1 - v) * (1 - v)));
-        result.add(Vec3.scale(curve[1],3 * (1 - v) * (1 - v) - 6 * v * (1 - v)));
-        result.add(Vec3.scale(curve[2],6 * v * (1 - v) - 3 * v * v));
-        result.add(Vec3.scale(curve[3],3 * v * v));
-
-        return result;
     }
+
+    var cpuBuffer: Uint8Array = new Uint8Array(colors);
+    return cpuBuffer;
+}
+
+export function getVertices(mesh: BezierSurface): Float32Array {
+
+    var vertices: number[] = new Array();
+
+    mesh.triangles.forEach( triangle => {
+        var p1 = triangle.p1.getVec3ForBuffer();
+        vertices.push(...p1)
+        var p2 = triangle.p2.getVec3ForBuffer();
+        vertices.push(...p2)
+        var p3 = triangle.p3.getVec3ForBuffer();
+        vertices.push(...p3)
+    })
+
+    var cpuBuffer: Float32Array = new Float32Array(vertices);
+    return cpuBuffer;
+}
+
+export function getTexture(mesh: BezierSurface): Float32Array {
+
+    var vertices: number[] = new Array();
+
+    mesh.triangles.forEach( triangle => {
+
+        var p1 = triangle.p1.getVec2ForBuffer();
+        vertices.push(...p1)
+        var p2 = triangle.p2.getVec2ForBuffer();
+        vertices.push(...p2)
+        var p3 = triangle.p3.getVec2ForBuffer();
+        vertices.push(...p3)
+    })
+
+    var cpuBuffer: Float32Array = new Float32Array(vertices);
+    return cpuBuffer;
 }

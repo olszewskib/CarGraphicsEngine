@@ -1,10 +1,10 @@
-import { BezierSurface } from "./models/bezier/BezierSurface";
+import { BezierSurfaceModel } from "./models/bezier/BezierSurfaceModel";
 import { fragmentShaderSourceCode } from "./lib/fragmentShader";
 import { vertexShaderSourceCode } from "./lib/vertexShader";
 import { M4 } from "./models/math/m4";
 import { deg2rad } from "./models/math/angles";
 import { Vec3 } from "./models/math/vec3";
-import { TriangleMesh, getBiTangents, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/triangleMesh";
+import { BezierSurface, getBiTangents, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/BezierSurface";
 import { createStaticVertexBuffer, getProgram } from "./webGL";
 
 
@@ -19,18 +19,18 @@ if(precisionSlider == null || zSlider == null)
 
 precisionSlider.addEventListener("input", function() {
     precision = parseInt(precisionSlider.value,10);
-    mesh.construct(precision);
-    triangleVertices = getVertices(mesh);
-    triangleNormals = getNormals(mesh);
-    triangleTangents = getTangents(mesh);
-    rgbTriangleColors = getColors(mesh,meshColorVector);
-    textureCoords = getTexture(mesh);
+    surface.construct(precision);
+    triangleVertices = getVertices(surface);
+    triangleNormals = getNormals(surface);
+    triangleTangents = getTangents(surface);
+    rgbTriangleColors = getColors(surface,meshColorVector);
+    textureCoords = getTexture(surface);
     drawTriangles(0,true);
 });
 
 zSlider.addEventListener("input", function() {
 
-    surface.setControlPointZValue(parseInt(xIndex.value,10),parseInt(yIndex.value,10),parseFloat(zSlider.value));
+    surfaceModel.setControlPointZValue(parseInt(xIndex.value,10),parseInt(yIndex.value,10),parseFloat(zSlider.value));
 
     var index = xIndex.value + yIndex.value;
     const cell = document.getElementById(index);
@@ -41,11 +41,11 @@ zSlider.addEventListener("input", function() {
             cell.textContent = zSlider.value;
         }
     }
-    mesh.construct(precision);
-    triangleVertices = getVertices(mesh);
-    triangleNormals = getNormals(mesh);
-    triangleTangents = getTangents(mesh);
-    rgbTriangleColors = getColors(mesh,meshColorVector);
+    surface.construct(precision);
+    triangleVertices = getVertices(surface);
+    triangleNormals = getNormals(surface);
+    triangleTangents = getTangents(surface);
+    rgbTriangleColors = getColors(surface,meshColorVector);
     drawTriangles(0,true)
     
 })
@@ -167,7 +167,7 @@ lightColorPicker.addEventListener("input", function() {
 
 meshColorPicker.addEventListener("input", function() {
     meshColorVector = Vec3.convertFromHEX(meshColorPicker.value);
-    rgbTriangleColors = getColors(mesh,meshColorVector);
+    rgbTriangleColors = getColors(surface,meshColorVector);
     isTexture = 0.0;
     drawTriangles(0,true);
 })
@@ -252,19 +252,19 @@ stopAnimationButton.addEventListener("click", function() {
 
 
 // Bezier Surface 
-const surface = new BezierSurface();
+const surfaceModel = new BezierSurfaceModel();
 //surface.setControlPointZValue(1,1,0.7);
 //surface.setControlPointZValue(3,2,0.7);
 
 // Triangle Mesh
 var precision: number = 60;
-const mesh = new TriangleMesh(precision,surface);
+const surface = new BezierSurface(precision,surfaceModel);
 
-var triangleVertices = getVertices(mesh);
-var triangleNormals = getNormals(mesh);
-var triangleTangents = getTangents(mesh);
-var rgbTriangleColors = getColors(mesh,meshColorVector);
-var textureCoords = getTexture(mesh);
+var triangleVertices = getVertices(surface);
+var triangleNormals = getNormals(surface);
+var triangleTangents = getTangents(surface);
+var rgbTriangleColors = getColors(surface,meshColorVector);
+var textureCoords = getTexture(surface);
 
 var lightLocation: Vec3 = new Vec3(xLightLocation,yLightLocation,zLightLocation);
 
@@ -490,7 +490,7 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
     gl.uniform1f(isNormalMapVSLocation,isNormalMap);
     gl.uniform1f(isTextureLocation,isTexture);
 
-    gl.drawArrays(gl.TRIANGLES, 0, mesh.triangles.length * 3);
+    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 
     ////////////////////// 2nd Surface ///////////////////////////////
     
@@ -505,7 +505,7 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
     gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
     gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix.convert());
     
-    gl.drawArrays(gl.TRIANGLES, 0, mesh.triangles.length * 3);
+    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 
     ////////////////////// 3nd Surface ///////////////////////////////
 
@@ -520,7 +520,7 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
     gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
     gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix.convert());
     
-    gl.drawArrays(gl.TRIANGLES, 0, mesh.triangles.length * 3);
+    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 
     ////////////////////// 4nd Surface ///////////////////////////////
 
@@ -535,7 +535,7 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
     gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
     gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix.convert());
     
-    gl.drawArrays(gl.TRIANGLES, 0, mesh.triangles.length * 3);
+    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 
     if(animation && !skip) {
         animationID = requestAnimationFrame(drawTriangles);
