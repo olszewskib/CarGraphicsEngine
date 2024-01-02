@@ -1,4 +1,4 @@
-import { Vec3 } from "./vec3";
+import { Vec3 } from "../math/vec3";
 
 export type Point3D = {
     x: number;

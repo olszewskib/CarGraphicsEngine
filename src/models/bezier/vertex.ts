@@ -1,5 +1,5 @@
-import { Vec3 } from "./vec3";
-import type { Vec4 } from "./vec4";
+import { Vec3 } from "../math/vec3";
+import type { Vec4 } from "../math/vec4";
 
 export class Vertex {
     x: number;

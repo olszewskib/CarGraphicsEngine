@@ -1,4 +1,4 @@
-import { Vec3 } from "./vec3";
+import { Vec3 } from "../math/vec3";
 import { Vertex } from "./vertex";
 import { Triangle } from "./triangle";
 import { BezierSurface } from "./BezierSurface";

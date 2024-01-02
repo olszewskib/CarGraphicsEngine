@@ -1,10 +1,10 @@
-import { BezierSurface } from "./models/BezierSurface";
+import { BezierSurface } from "./models/bezier/BezierSurface";
 import { fragmentShaderSourceCode } from "./lib/fragmentShader";
 import { vertexShaderSourceCode } from "./lib/vertexShader";
-import { M4 } from "./models/m4";
-import { deg2rad } from "./models/angles";
-import { Vec3 } from "./models/vec3";
-import { TriangleMesh, getBiTangents, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/triangleMesh";
+import { M4 } from "./models/math/m4";
+import { deg2rad } from "./models/math/angles";
+import { Vec3 } from "./models/math/vec3";
+import { TriangleMesh, getBiTangents, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/triangleMesh";
 import { createStaticVertexBuffer, getProgram } from "./webGL";
 
 
@@ -291,6 +291,17 @@ if(!canvas) {
     throw new Error("Cant find canvas");
 }
 
+var keys: { [key: string]: boolean } = {};
+
+canvas.addEventListener("keydown", function(event) {
+    keys[event.key] = true;
+})
+
+canvas.addEventListener("keyup", function(event) {
+    keys[event.key] = false;
+})
+
+
 // getting gl context
 const gl = canvas.getContext('webgl2');
 if(!gl) {
@@ -331,6 +342,12 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
         var delta = now-then;
         then = now;
         lightLocation.rotate(deg2rad(rotationSpeed * delta),500,500);
+        if(keys["ArrowUp"]) {
+            yCamera += 10;
+        }
+        if(keys["ArrowDown"]) {
+            yCamera -= 10;
+        }
     }
 
     if(!gl) {
