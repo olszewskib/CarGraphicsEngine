@@ -1,8 +1,7 @@
 #mainCanvas {
   display: block;
   margin: auto;
-  width: 800;
-  height: 800;
+  outline: none;
   background-color: aliceblue;
 }
 
