@@ -4,7 +4,7 @@ import { vertexShaderSourceCode } from "./lib/vertexShader";
 import { M4 } from "./models/math/m4";
 import { deg2rad } from "./models/math/angles";
 import { Vec3 } from "./models/math/vec3";
-import { BezierSurface, getBiTangents, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/BezierSurface";
+import { BezierSurface, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/BezierSurface";
 import { createStaticVertexBuffer, getProgram } from "./webGL";
 
 
@@ -253,11 +253,9 @@ stopAnimationButton.addEventListener("click", function() {
 
 // Bezier Surface 
 const surfaceModel = new BezierSurfaceModel();
-//surface.setControlPointZValue(1,1,0.7);
-//surface.setControlPointZValue(3,2,0.7);
 
 // Triangle Mesh
-var precision: number = 60;
+var precision: number = 20;
 const surface = new BezierSurface(precision,surfaceModel);
 
 var triangleVertices = getVertices(surface);
@@ -301,7 +299,6 @@ canvas.addEventListener("keyup", function(event) {
     keys[event.key] = false;
 })
 
-
 // getting gl context
 const gl = canvas.getContext('webgl2');
 if(!gl) {
@@ -335,6 +332,9 @@ const isNormalMapFSLocation = gl.getUniformLocation(drawTriangleProgram, 'isNorm
 const isNormalMapVSLocation = gl.getUniformLocation(drawTriangleProgram, 'isNormalMapVS');
 const isTextureLocation = gl.getUniformLocation(drawTriangleProgram, 'isTexture');
 
+var outerEdge:number = 1;
+var innerEdge:number = 1;
+
 function drawTriangles(now: number = 0, skip: boolean = false) {
 
     if(animation && !skip) {
@@ -347,6 +347,31 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
         }
         if(keys["ArrowDown"]) {
             yCamera -= 10;
+        }
+        if(keys["ArrowRight"]) {
+            if(innerEdge == 0) outerEdge += 1;
+            else innerEdge -= 1;
+
+            surface.liftInnerEdge(innerEdge/10);
+            surface.liftOuterEdge(outerEdge/10);
+            triangleVertices = getVertices(surface);
+            triangleNormals = getNormals(surface);
+            triangleTangents = getTangents(surface);
+            rgbTriangleColors = getColors(surface,meshColorVector);
+            textureCoords = getTexture(surface);
+        }
+        if(keys["ArrowLeft"]) {
+            console.log(outerEdge,innerEdge)
+            if(outerEdge == 0) innerEdge += 1;
+            else outerEdge -= 1;
+
+            surface.liftInnerEdge(innerEdge/10);
+            surface.liftOuterEdge(outerEdge/10);
+            triangleVertices = getVertices(surface);
+            triangleNormals = getNormals(surface);
+            triangleTangents = getTangents(surface);
+            rgbTriangleColors = getColors(surface,meshColorVector);
+            textureCoords = getTexture(surface);
         }
     }
 
@@ -494,48 +519,20 @@ function drawTriangles(now: number = 0, skip: boolean = false) {
 
     ////////////////////// 2nd Surface ///////////////////////////////
     
-    var modelMatrix = M4.scaling(1000,2000,1000);
-    var rotationMatrix = M4.rotationZ(deg2rad(90));
-    var translationMatrix = M4.translation(1000,1000,0);
-    translationMatrix = M4.multiply(rotationMatrix, translationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
+    //var modelMatrix = M4.scaling(1000,2000,1000);
+    //var rotationMatrix = M4.rotationZ(deg2rad(90));
+    //var translationMatrix = M4.translation(1000,1000,0);
+    //translationMatrix = M4.multiply(rotationMatrix, translationMatrix);
+    //modelMatrix = M4.multiply(modelMatrix,translationMatrix);
 
-    var worldViewProjectionMatrix = M4.multiply(modelMatrix,viewProjectionMatrix);
+    //var worldViewProjectionMatrix = M4.multiply(modelMatrix,viewProjectionMatrix);
 
-    gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix.convert());
-    
-    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
+    //gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
+    //gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix.convert());
+    //
+    //gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 
-    ////////////////////// 3nd Surface ///////////////////////////////
-
-    var modelMatrix = M4.scaling(1000,2000,1000);
-    var rotationMatrix = M4.rotationZ(deg2rad(180));
-    var translationMatrix = M4.translation(-1000,1000,0);
-    translationMatrix = M4.multiply(rotationMatrix, translationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
-
-    var worldViewProjectionMatrix = M4.multiply(modelMatrix,viewProjectionMatrix);
-
-    gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix.convert());
-    
-    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
-
-    ////////////////////// 4nd Surface ///////////////////////////////
-
-    var modelMatrix = M4.scaling(1000,2000,1000);
-    var rotationMatrix = M4.rotationZ(deg2rad(270));
-    var translationMatrix = M4.translation(-1000,-1000,0);
-    translationMatrix = M4.multiply(rotationMatrix, translationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
-
-    var worldViewProjectionMatrix = M4.multiply(modelMatrix,viewProjectionMatrix);
-
-    gl.uniformMatrix4fv(worldLocation, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(worldViewProjectionLocation, false, worldViewProjectionMatrix.convert());
-    
-    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
+    ////////////////////// 2nd Surface ///////////////////////////////
 
     if(animation && !skip) {
         animationID = requestAnimationFrame(drawTriangles);

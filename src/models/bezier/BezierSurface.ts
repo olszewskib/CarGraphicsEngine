@@ -17,11 +17,7 @@ export class BezierSurface {
         this.construct(this.precision);
     }
 
-    construct(precision: number) {
-        this.constructBezier(precision);
-    }
-
-    constructBezier(precision: number): void {
+    construct(precision: number): void {
         this.triangles = [];
         this.precision = precision;
         var edgeLenght: number = this.size/this.precision;
@@ -86,6 +82,22 @@ export class BezierSurface {
             }
         }
     }
+
+    liftOuterEdge(height: number): void {
+        this.surface.setControlPointZValue(3,0,height);
+        this.surface.setControlPointZValue(3,1,height);
+        this.surface.setControlPointZValue(3,2,height);
+        this.surface.setControlPointZValue(3,3,height);
+        this.construct(this.precision);
+    }
+    
+    liftInnerEdge(height: number): void {
+        this.surface.setControlPointZValue(0,0,height);
+        this.surface.setControlPointZValue(0,1,height);
+        this.surface.setControlPointZValue(0,2,height);
+        this.surface.setControlPointZValue(0,3,height);
+        this.construct(this.precision);
+    }
 }
 
 export function getNormals(mesh: BezierSurface): Float32Array {
@@ -144,6 +156,7 @@ export function getBiTangents(mesh: BezierSurface): Float32Array {
     var cpuBuffer: Float32Array = new Float32Array(bitangents);
     return cpuBuffer;
 }
+
 export function getColors(mesh: BezierSurface, color?: Vec3): Uint8Array {
     
     var colors: number[] = new Array();
