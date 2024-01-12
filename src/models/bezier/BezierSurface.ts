@@ -106,7 +106,7 @@ export function getNormals(mesh: BezierSurface): Float32Array {
 
     mesh.triangles.forEach( triangle => {
         if(!triangle.p1.normal || !triangle.p2.normal || !triangle.p3.normal) {
-            throw new Error("VertexNormalIsUndefined");
+            throw new Error("a_normalIsUndefined");
         }
 
         var p1 = triangle.p1.normal.getVec3ForBuffer();

@@ -1,25 +1,21 @@
 
-export const fragmentShaderSourceCode = `#version 300 es
+export const bezierFragmentShaderSourceCode = `#version 300 es
 precision mediump float;
 
-in vec3 fragmentColor;
 in vec3 fragmentNormal;
 in vec3 surfaceToLight;
+in vec3 fragmentColor;
 in vec3 surfaceToEye;
-
-// texture
 in vec2 texCoord;
-uniform sampler2D tex;
-uniform sampler2D normalTex;
 
-uniform float mirror;
-uniform vec3 lightColor;
-
-uniform float kd;
-uniform float ks;
-
-uniform float isTexture;
 uniform float isNormalMapFS;
+uniform sampler2D normalTex;
+uniform vec3 u_lightColor;
+uniform float isTexture;
+uniform sampler2D tex;
+uniform float u_kd;
+uniform float u_ks;
+uniform float u_m;
 
 out vec4 outputColor;
 
@@ -43,7 +39,7 @@ void main() {
     float light = dot(normal, s2l);
     float reflect = 0.0;
     if(light > 0.0) {
-        reflect = pow(dot(normal, halfVector), mirror);
+        reflect = pow(dot(normal, halfVector), u_m);
     }
 
     // checking if we should draw a texture or a normal color
@@ -54,6 +50,6 @@ void main() {
         outputColor = vec4(fragmentColor, 1.0);
     }
 
-    outputColor.rgb *= (light * lightColor * kd);
-    outputColor.rgb += (reflect * lightColor * ks);
+    outputColor.rgb *= (light * u_lightColor * u_kd);
+    outputColor.rgb += (reflect * u_lightColor * u_ks);
 }`;
