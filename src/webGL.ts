@@ -47,3 +47,13 @@ export function createStaticVertexBuffer(gl: WebGL2RenderingContext, data: Array
 
     return buffer;
 }
+
+export function setRenderingCanvas(gl: WebGL2RenderingContext, canvas: HTMLCanvasElement) {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+
+    gl.clearColor(0.08, 0.08, 0.08, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+}

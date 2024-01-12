@@ -1,29 +1,20 @@
-import { BezierSurfaceModel } from "./models/bezier/BezierSurfaceModel";
+import { BezierSurface, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/BezierSurface";
 import { bezierFragmentShaderSourceCode } from "./lib/bezier/fragmentShader";
 import { bezierVertexShaderSourceCode } from "./lib/bezier/vertexShader";
+import { BezierSurfaceModel } from "./models/bezier/BezierSurfaceModel";
 import { carFragmentShader } from "./lib/car/carFragmentShader";
+import { createStaticVertexBuffer, getProgram, setRenderingCanvas } from "./webGL";
+import { BezierAttribs } from "./models/bezier/BezierAttribs";
 import { carVertexShader } from "./lib/car/carVertexShader";
-import { M4 } from "./models/math/m4";
 import { deg2rad } from "./models/math/angles";
 import { Vec3 } from "./models/math/vec3";
-import { BezierSurface, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/BezierSurface";
-import { createStaticVertexBuffer, getProgram } from "./webGL";
 import { OBJParser } from "./objParser";
+import { M4 } from "./models/math/m4";
+import { CarAttribs } from "./models/car/CarAttribs";
 
 // ------------------------------------------------------------------------- Fetchin obj -------------------------------------------------------------------------
-const objFileUrl = 'resources/obj/porsche/Porsche_911_GT2.obj';
-//const objFileUrl = 'resources/drp.obj';
-var carModel = new OBJParser();
 
-await fetch(objFileUrl)
-  .then(response => response.text())
-  .then(objContent => {
-    carModel.parse(objContent);
-  })
-  .catch(error => {
-    console.error('Error fetching the OBJ file:', error);
-  });
-console.log('loaded');
+
 // ------------------------------------------------------------------------- Fetchin obj -------------------------------------------------------------------------
 
 const precisionSlider = document.getElementById("precisionSlider") as HTMLInputElement;
@@ -266,21 +257,7 @@ stopAnimationButton.addEventListener("click", function() {
 })
 
 
-// ------------------------------------------------------------------------- Code Below ------------------------------------------------------------------------
-
-
-// Bezier Surface 
-const surfaceModel = new BezierSurfaceModel();
-
-// Triangle Mesh
-var precision: number = 20;
-const surface = new BezierSurface(precision,surfaceModel);
-
-var triangleVertices = getVertices(surface);
-var triangleNormals = getNormals(surface);
-var triangleTangents = getTangents(surface);
-var rgbTriangleColors = getColors(surface,meshColorVector);
-var textureCoords = getTexture(surface);
+// ------------------------------------------------------------------------- Flags ------------------------------------------------------------------------
 
 var lightLocation: Vec3 = new Vec3(xLightLocation,yLightLocation,zLightLocation);
 
@@ -302,74 +279,58 @@ var isNormalMap = 1.0;
 var outerEdge:number = 1;
 var innerEdge:number = 1;
 
-// ------------------------------------------------------------------------ Main Program -------------------------------------------------------------------------
+// ------------------------------------------------------------------------ Canvas -------------------------------------------------------------------------
 
-// getting Canvas
 const canvas = document.getElementById("mainCanvas") as HTMLCanvasElement;
-if(!canvas) {
-    throw new Error("Cant find canvas");
-}
+if(!canvas) throw new Error("Cant find canvas");
 
 var keys: { [key: string]: boolean } = {};
+canvas.addEventListener("keydown", function(event) { keys[event.key] = true; })
+canvas.addEventListener("keyup", function(event) { keys[event.key] = false; })
 
-canvas.addEventListener("keydown", function(event) {
-    keys[event.key] = true;
-})
+// ------------------------------------------------------------------------ GL -------------------------------------------------------------------------
 
-canvas.addEventListener("keyup", function(event) {
-    keys[event.key] = false;
-})
-
-// ------------------------------------------------------------------------ Main Program -------------------------------------------------------------------------
-
-// getting gl context
-const gl = canvas.getContext('webgl2');
+export const gl = canvas.getContext('webgl2');
 if(!gl) throw new Error("webGL not supported");
 
-// creating a program for drawing a bezier surface
-const drawBezierProgram = getProgram(gl,bezierVertexShaderSourceCode,bezierFragmentShaderSourceCode);
+// ------------------------------------------------------------------------ Bezier Surface -------------------------------------------------------------------------
+
+const surfaceModel = new BezierSurfaceModel();
+
+var precision: number = 20;
+const surface = new BezierSurface(precision,surfaceModel);
+
+var triangleVertices = getVertices(surface);
+var triangleNormals = getNormals(surface);
+var triangleTangents = getTangents(surface);
+var rgbTriangleColors = getColors(surface,meshColorVector);
+var textureCoords = getTexture(surface);
+
+export const drawBezierProgram = getProgram(gl,bezierVertexShaderSourceCode,bezierFragmentShaderSourceCode);
 if(!drawBezierProgram) throw new Error("getProgramError");
 
-// Attribute locations
-const a_texcoord = gl.getAttribLocation(drawBezierProgram, 'a_texcoord');
-const a_tangent = gl.getAttribLocation(drawBezierProgram, 'a_tangent');
-const a_normal = gl.getAttribLocation(drawBezierProgram, 'a_normal');
-const a_vertex = gl.getAttribLocation(drawBezierProgram, 'a_vertex');
-const a_color = gl.getAttribLocation(drawBezierProgram, 'a_color');
-
-// Uniform locations
-const u_worldViewProjection = gl.getUniformLocation(drawBezierProgram, 'u_worldViewProjection');
-const u_lightWorldPosition = gl.getUniformLocation(drawBezierProgram, 'u_lightWorldPosition');
-const isNormalMapFSLocation = gl.getUniformLocation(drawBezierProgram, 'isNormalMapFS');
-const isNormalMapVSLocation = gl.getUniformLocation(drawBezierProgram, 'isNormalMapVS');
-const u_eyePosition = gl.getUniformLocation(drawBezierProgram, 'u_eyePosition');
-const isTextureLocation = gl.getUniformLocation(drawBezierProgram, 'isTexture');
-const u_lightColor = gl.getUniformLocation(drawBezierProgram, 'u_lightColor');
-const u_world = gl.getUniformLocation(drawBezierProgram, 'u_world');
-const u_kd = gl.getUniformLocation(drawBezierProgram, 'u_kd');
-const u_ks = gl.getUniformLocation(drawBezierProgram, 'u_ks');
-const u_m = gl.getUniformLocation(drawBezierProgram, 'u_m');
+const DrawBezier = BezierAttribs(gl,drawBezierProgram);
 
 function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatrix: M4, cameraPosition: Vec3) {
     
     gl.useProgram(program);
 
-    gl.enableVertexAttribArray(a_vertex);
-    gl.enableVertexAttribArray(a_color);
-    gl.enableVertexAttribArray(a_normal);
-    gl.enableVertexAttribArray(a_texcoord);
-    gl.enableVertexAttribArray(a_tangent);
+    gl.enableVertexAttribArray(DrawBezier.a_vertex);
+    gl.enableVertexAttribArray(DrawBezier.a_color);
+    gl.enableVertexAttribArray(DrawBezier.a_normal);
+    gl.enableVertexAttribArray(DrawBezier.a_texcoord);
+    gl.enableVertexAttribArray(DrawBezier.a_tangent);
 
-    gl.uniform3fv(u_lightWorldPosition, lightLocation.getVec3ForBuffer());
-    gl.uniform3fv(u_eyePosition,cameraPosition.getVec3ForBuffer());
-    gl.uniform3fv(u_lightColor,lightColorVector.getVec3ForBuffer());
-    gl.uniform1f(u_m,mirror)
-    gl.uniform1f(u_ks,ks);
-    gl.uniform1f(u_kd,kd);
+    gl.uniform3fv(DrawBezier.u_lightWorldPosition, lightLocation.getVec3ForBuffer());
+    gl.uniform3fv(DrawBezier.u_eyePosition,cameraPosition.getVec3ForBuffer());
+    gl.uniform3fv(DrawBezier.u_lightColor,lightColorVector.getVec3ForBuffer());
+    gl.uniform1f(DrawBezier.u_m,mirror)
+    gl.uniform1f(DrawBezier.u_ks,ks);
+    gl.uniform1f(DrawBezier.u_kd,kd);
 
-    gl.uniform1f(isNormalMapFSLocation,isNormalMap);
-    gl.uniform1f(isNormalMapVSLocation,isNormalMap);
-    gl.uniform1f(isTextureLocation,isTexture);
+    gl.uniform1f(DrawBezier.isNormalMapFSLocation,isNormalMap);
+    gl.uniform1f(DrawBezier.isNormalMapVSLocation,isNormalMap);
+    gl.uniform1f(DrawBezier.isTextureLocation,isTexture);
 
     var triangleBuffer = createStaticVertexBuffer(gl, triangleVertices);
     var rgbTriabgleBuffer = createStaticVertexBuffer(gl, rgbTriangleColors);
@@ -378,19 +339,19 @@ function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatr
     var textureBuffer = createStaticVertexBuffer(gl, textureCoords);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
-    gl.vertexAttribPointer(a_vertex, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(DrawBezier.a_vertex, 3, gl.FLOAT, false, 0, 0);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.vertexAttribPointer(a_normal, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(DrawBezier.a_normal, 3, gl.FLOAT, false, 0, 0);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, rgbTriabgleBuffer);
-    gl.vertexAttribPointer(a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+    gl.vertexAttribPointer(DrawBezier.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(a_texcoord, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(DrawBezier.a_texcoord, 2, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, tangentsBuffer);
-    gl.vertexAttribPointer(a_tangent, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(DrawBezier.a_tangent, 3, gl.FLOAT, false, 0, 0);
 
     // texture
     if(loadTexture) {
@@ -448,30 +409,38 @@ function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatr
 
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
 
-    gl.uniformMatrix4fv(u_world, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(u_worldViewProjection, false, worldViewProjectionMatrix.convert());
+    gl.uniformMatrix4fv(DrawBezier.u_world, false, modelMatrix.convert());
+    gl.uniformMatrix4fv(DrawBezier.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
 
     gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 }
 
 // ------------------------------------------------------------------------- Car -------------------------------------------------------------------------
+
+const carObjUrl = 'resources/obj/porsche/Porsche_911_GT2.obj';
+var carModel = new OBJParser();
+
+await fetch(carObjUrl)
+  .then(response => response.text())
+  .then(objContent => {
+    carModel.parse(objContent);
+  })
+  .catch(error => {
+    console.error('Error fetching the OBJ file:', error);
+  });
+
 const drawCarProgram = getProgram(gl,carVertexShader,carFragmentShader);
 if(!drawCarProgram) throw new Error("getProgramError");
 
-// Attribute locations
-const car_a_texcoord = gl.getAttribLocation(drawBezierProgram, 'a_texcoord');
-const car_a_vertex = gl.getAttribLocation(drawCarProgram, 'a_vertex');
-const car_a_color = gl.getAttribLocation(drawCarProgram, 'a_color');
-
-const car_u_worldViewProjection = gl.getUniformLocation(drawCarProgram, 'u_worldViewProjection');
+const DrawCar = CarAttribs(gl,drawCarProgram);
 
 function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatrix: M4, cameraPosition: Vec3) {
         
     gl.useProgram(program);
 
-    gl.enableVertexAttribArray(car_a_vertex);
-    gl.enableVertexAttribArray(car_a_color);
-    gl.enableVertexAttribArray(car_a_texcoord);
+    gl.enableVertexAttribArray(DrawCar.a_vertex);
+    gl.enableVertexAttribArray(DrawCar.a_color);
+    gl.enableVertexAttribArray(DrawCar.a_texcoord);
 
     var rgb = [];
     for(var i = 0; i < carModel.vertices.length; i+=9) {
@@ -485,13 +454,13 @@ function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatrix:
     var textureBuffer = createStaticVertexBuffer(gl, new Float32Array(carModel.textures));
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(car_a_vertex, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(DrawCar.a_vertex, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.vertexAttribPointer(car_a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+    gl.vertexAttribPointer(DrawCar.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(car_a_texcoord, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(DrawCar.a_texcoord, 2, gl.FLOAT, false, 0, 0);
 
     if(loadTexture) {
 
@@ -547,11 +516,12 @@ function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatrix:
     var modelMatrix = M4.scaling(1000,1000,1000);
 
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-    gl.uniformMatrix4fv(car_u_worldViewProjection, false, worldViewProjectionMatrix.convert());
+    gl.uniformMatrix4fv(DrawCar.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
 
     gl.drawArrays(gl.TRIANGLES, 0, carModel.vertices.length / 3);
 }
 
+// ------------------------------------------------------------------------- Camera -------------------------------------------------------------------------
 
 function getCameraMatrix() : M4 {
 
@@ -574,15 +544,7 @@ function getCameraMatrix() : M4 {
 
 }
 
-function setRenderingCanvas(gl: WebGL2RenderingContext, canvas: HTMLCanvasElement) {
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-
-    gl.clearColor(0.08, 0.08, 0.08, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.enable(gl.DEPTH_TEST);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-}
+// ------------------------------------------------------------------------- Drawing -------------------------------------------------------------------------
 
 function drawScene(now: number = 0, skip: boolean = false) {
 
