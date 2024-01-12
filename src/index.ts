@@ -636,8 +636,8 @@ function drawScene(now: number = 0, skip: boolean = false) {
     var cameraPosition: Vec3 = new Vec3(xCamera,yCamera,zCamera); 
 
     // Drawing bezier surface
-    drawCar(gl, drawCarProgram, cameraMatrix, cameraPosition);
     drawBezier(gl, drawBezierProgram, cameraMatrix, cameraPosition);
+    drawCar(gl, drawCarProgram, cameraMatrix, cameraPosition);
 
     // Draw a car model
 
