@@ -1,22 +1,20 @@
 import { BezierSurface, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/BezierSurface";
-import { createStaticVertexBuffer, getProgram, setRenderingCanvas } from "./webGL";
+import { GlAttributes, createStaticVertexBuffer, getProgram, setRenderingCanvas } from "./webGL";
 import { bezierFragmentShaderSourceCode } from "./lib/bezier/fragmentShader";
 import { bezierVertexShaderSourceCode } from "./lib/bezier/vertexShader";
+import { lightsFragmentShader } from "./lib/lights/lightsFragmentShader";
 import { BezierSurfaceModel } from "./models/bezier/BezierSurfaceModel";
+import { lightsVertexShader } from "./lib/lights/lightsVertexShader";
+import { roadFragmentShader } from "./lib/road/roadFragmentShader";
 import { carFragmentShader } from "./lib/car/carFragmentShader";
+import { roadVertexShader } from "./lib/road/roadVertexShader";
 import { BezierAttribs } from "./models/bezier/BezierAttribs";
+import { CarLightModel } from "./models/lights/carLightModel";
 import { carVertexShader } from "./lib/car/carVertexShader";
-import { ObjAttribs } from "./models/obj/ObjAttribs";
 import { deg2rad } from "./models/math/angles";
 import { Vec3 } from "./models/math/vec3";
 import { OBJParser } from "./objParser";
 import { M4 } from "./models/math/m4";
-import { roadVertexShader } from "./lib/road/roadVertexShader";
-import { roadFragmentShader } from "./lib/road/roadFragmentShader";
-import { CarLightModel } from "./models/lights/carLightModel";
-import { lightsVertexShader } from "./lib/lights/lightsVertexShader";
-import { lightsFragmentShader } from "./lib/lights/lightsFragmentShader";
-import { LightsAttribs } from "./models/lights/LightsAttribs";
 
 const precisionSlider = document.getElementById("precisionSlider") as HTMLInputElement;
 
@@ -383,28 +381,28 @@ var textureCoords = getTexture(surface);
 export const drawBezierProgram = getProgram(gl,bezierVertexShaderSourceCode,bezierFragmentShaderSourceCode);
 if(!drawBezierProgram) throw new Error("getProgramError");
 
-const DrawBezier = BezierAttribs(gl,drawBezierProgram);
+const bezierAttributes = new GlAttributes(gl,drawBezierProgram);
 
-function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatrix: M4, cameraPosition: Vec3) {
+function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
     
     gl.useProgram(program);
 
-    gl.enableVertexAttribArray(DrawBezier.a_vertex);
-    gl.enableVertexAttribArray(DrawBezier.a_color);
-    gl.enableVertexAttribArray(DrawBezier.a_normal);
-    gl.enableVertexAttribArray(DrawBezier.a_texcoord);
-    gl.enableVertexAttribArray(DrawBezier.a_tangent);
+    gl.enableVertexAttribArray(attributes.a_vertex);
+    gl.enableVertexAttribArray(attributes.a_color);
+    gl.enableVertexAttribArray(attributes.a_normal);
+    gl.enableVertexAttribArray(attributes.a_texcoord);
+    gl.enableVertexAttribArray(attributes.a_tangent);
 
-    gl.uniform3fv(DrawBezier.u_lightWorldPosition, lightLocation.getVec3ForBuffer());
-    gl.uniform3fv(DrawBezier.u_eyePosition,cameraPosition.getVec3ForBuffer());
-    gl.uniform3fv(DrawBezier.u_lightColor,lightColorVector.getVec3ForBuffer());
-    gl.uniform1f(DrawBezier.u_m,mirror)
-    gl.uniform1f(DrawBezier.u_ks,ks);
-    gl.uniform1f(DrawBezier.u_kd,kd);
+    gl.uniform3fv(attributes.u_lightWorldPosition, lightLocation.getVec3ForBuffer());
+    gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+    gl.uniform3fv(attributes.u_lightColor,lightColorVector.getVec3ForBuffer());
+    gl.uniform1f(attributes.u_m,mirror)
+    gl.uniform1f(attributes.u_ks,ks);
+    gl.uniform1f(attributes.u_kd,kd);
 
-    gl.uniform1f(DrawBezier.isNormalMapFSLocation,isNormalMap);
-    gl.uniform1f(DrawBezier.isNormalMapVSLocation,isNormalMap);
-    gl.uniform1f(DrawBezier.isTextureLocation,isTexture);
+    gl.uniform1f(attributes.isNormalMapFSLocation,isNormalMap);
+    gl.uniform1f(attributes.isNormalMapVSLocation,isNormalMap);
+    gl.uniform1f(attributes.isTextureLocation,isTexture);
 
     var triangleBuffer = createStaticVertexBuffer(gl, triangleVertices);
     var rgbTriabgleBuffer = createStaticVertexBuffer(gl, rgbTriangleColors);
@@ -413,19 +411,19 @@ function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatr
     var textureBuffer = createStaticVertexBuffer(gl, textureCoords);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
-    gl.vertexAttribPointer(DrawBezier.a_vertex, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.vertexAttribPointer(DrawBezier.a_normal, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, rgbTriabgleBuffer);
-    gl.vertexAttribPointer(DrawBezier.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+    gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(DrawBezier.a_texcoord, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, tangentsBuffer);
-    gl.vertexAttribPointer(DrawBezier.a_tangent, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_tangent, 3, gl.FLOAT, false, 0, 0);
 
     // texture
     if(loadTexture) {
@@ -480,11 +478,13 @@ function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatr
     }
 
     var modelMatrix = M4.scaling(1000,1000,1000);
+    var rotationMatrix = M4.rotationZ(deg2rad(90));
+    modelMatrix = M4.multiply(modelMatrix,rotationMatrix);
 
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
 
-    gl.uniformMatrix4fv(DrawBezier.u_world, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(DrawBezier.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
+    gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
+    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
 
     gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 }
@@ -506,23 +506,23 @@ await fetch(carObjUrl)
 const drawCarProgram = getProgram(gl,carVertexShader,carFragmentShader);
 if(!drawCarProgram) throw new Error("getProgramError");
 
-const DrawCar = ObjAttribs(gl,drawCarProgram);
+const carAttributes = new GlAttributes(gl,drawCarProgram);
 
-function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatrix: M4, cameraPosition: Vec3) {
+function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
         
     gl.useProgram(program);
 
-    gl.enableVertexAttribArray(DrawCar.a_vertex);
-    gl.enableVertexAttribArray(DrawCar.a_color);
-    gl.enableVertexAttribArray(DrawCar.a_texcoord);
-    gl.enableVertexAttribArray(DrawCar.a_normal);
+    gl.enableVertexAttribArray(attributes.a_vertex);
+    gl.enableVertexAttribArray(attributes.a_color);
+    gl.enableVertexAttribArray(attributes.a_texcoord);
+    gl.enableVertexAttribArray(attributes.a_normal);
 
-    gl.uniform3fv(DrawCar.u_lightWorldPosition, lightLocation.getVec3ForBuffer());
-    gl.uniform3fv(DrawCar.u_eyePosition,cameraPosition.getVec3ForBuffer());
-    gl.uniform3fv(DrawCar.u_lightColor,lightColorVector.getVec3ForBuffer());
-    gl.uniform1f(DrawCar.u_m,mirror)
-    gl.uniform1f(DrawCar.u_ks,ks);
-    gl.uniform1f(DrawCar.u_kd,kd);
+    gl.uniform3fv(attributes.u_lightWorldPosition, lightLocation.getVec3ForBuffer());
+    gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+    gl.uniform3fv(attributes.u_lightColor,lightColorVector.getVec3ForBuffer());
+    gl.uniform1f(attributes.u_m,mirror)
+    gl.uniform1f(attributes.u_ks,ks);
+    gl.uniform1f(attributes.u_kd,kd);
 
     var rgb = [];
     for(var i = 0; i < carModel.vertices.length; i+=9) {
@@ -537,16 +537,16 @@ function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatrix:
     var textureBuffer = createStaticVertexBuffer(gl, new Float32Array(carModel.textures));
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(DrawCar.a_vertex, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.vertexAttribPointer(DrawCar.a_normal, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.vertexAttribPointer(DrawCar.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+    gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(DrawCar.a_texcoord, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
 
     if(loadTexture) {
 
@@ -607,8 +607,8 @@ function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, cameraMatrix:
     modelMatrix = M4.multiply(modelMatrix,translationMatrix);
 
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-    gl.uniformMatrix4fv(DrawCar.u_world, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(DrawCar.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
+    gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
+    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
 
     gl.drawArrays(gl.TRIANGLES, 0, carModel.vertices.length / 3);
 }
@@ -629,22 +629,25 @@ await fetch(roadObjUrl)
 const drawRoadProgram = getProgram(gl,roadVertexShader,roadFragmentShader);
 if(!drawRoadProgram) throw new Error("getProgramError");
 
-var DrawRoad = ObjAttribs(gl,drawRoadProgram);
-
-function drawRoad(gl:WebGL2RenderingContext, program: WebGLProgram, model: OBJParser, cameraMatrix: M4, cameraPosition: Vec3) {
+const roadAttributes = new GlAttributes(gl,drawRoadProgram);
+function drawRoad(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3, dy: number) {
         
     gl.useProgram(program);
 
-    gl.enableVertexAttribArray(DrawRoad.a_vertex);
-    gl.enableVertexAttribArray(DrawRoad.a_color);
-    gl.enableVertexAttribArray(DrawRoad.a_texcoord);
+    gl.enableVertexAttribArray(attributes.a_vertex);
+    gl.enableVertexAttribArray(attributes.a_color);
+    gl.enableVertexAttribArray(attributes.a_texcoord);
 
-    gl.uniform3fv(DrawRoad.u_lightWorldPosition, lightLocation.getVec3ForBuffer());
-    gl.uniform3fv(DrawRoad.u_eyePosition,cameraPosition.getVec3ForBuffer());
-    gl.uniform3fv(DrawRoad.u_lightColor,lightColorVector.getVec3ForBuffer());
-    gl.uniform1f(DrawRoad.u_m,mirror)
-    gl.uniform1f(DrawRoad.u_ks,ks);
-    gl.uniform1f(DrawRoad.u_kd,kd);
+    var lights = [...lightLocation.getVec3ForBuffer(), 376, 157, 128, 626, 144, 127 ]
+    gl.uniform3fv(attributes.u_lightWorldPosition, lights);
+    gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+    var lightColor = [...lightColorVector.getVec3ForBuffer(), 1,1,0, 1,1,0];
+    console.log(lightColor)
+    gl.uniform3fv(attributes.u_lightColor,lightColor);
+    gl.uniform1f(attributes.u_m,mirror)
+    gl.uniform1f(attributes.u_ks,ks);
+    gl.uniform1f(attributes.u_kd,kd);
+
 
 
     var vertexBuffer = createStaticVertexBuffer(gl, triangleVertices);
@@ -652,13 +655,13 @@ function drawRoad(gl:WebGL2RenderingContext, program: WebGLProgram, model: OBJPa
     var textureBuffer = createStaticVertexBuffer(gl, textureCoords);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(DrawRoad.a_vertex, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.vertexAttribPointer(DrawRoad.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+    gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(DrawRoad.a_texcoord, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
 
     if(loadTexture) {
 
@@ -711,13 +714,13 @@ function drawRoad(gl:WebGL2RenderingContext, program: WebGLProgram, model: OBJPa
 
     var modelMatrix = M4.scaling(1000,1000,1000);
     var zRotationMatrix = M4.rotationZ(deg2rad(90));
-    var translationMatrix = M4.translation(1000,0,0);
+    var translationMatrix = M4.translation(1000,dy,0);
     modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
     modelMatrix = M4.multiply(modelMatrix,translationMatrix);
 
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-    gl.uniformMatrix4fv(DrawRoad.u_world, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(DrawRoad.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
+    gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
+    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
 
     gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 }
@@ -725,7 +728,6 @@ function drawRoad(gl:WebGL2RenderingContext, program: WebGLProgram, model: OBJPa
 // ------------------------------------------------------------------------- Lights -------------------------------------------------------------------------
 const lightMesh = new CarLightModel(20,1);
 lightMesh.createSphereArrayBuffer(30,15);
-console.log(lightMesh.bufferData);
 const lightBufferData: Float32Array = lightMesh.bufferData;
 
 function getRightLightModelMatrix(): M4 {
@@ -748,9 +750,6 @@ function getLeftLightModelMatrix(): M4 {
     var yRotationMatrix = M4.rotationY(deg2rad(360));
     var zRotationMatrix = M4.rotationZ(deg2rad(176));
     var translationMatrix = M4.translation(626,144,127);
-    console.log(Tx,Ty,Tz);
-    console.log(Rx,Ry,Rz);
-    console.log(Sx,Sy,Sz);
     modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
     modelMatrix = M4.multiply(modelMatrix,yRotationMatrix);
     modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
@@ -762,13 +761,13 @@ function getLeftLightModelMatrix(): M4 {
 const drawLightProgram = getProgram(gl,lightsVertexShader,lightsFragmentShader);
 if(!drawLightProgram) throw new Error("getProgramError");
 
-const DrawLight = LightsAttribs(gl,drawLightProgram);
+const lightAttributes = new GlAttributes(gl,drawLightProgram);
 
-function drawLights(gl:WebGL2RenderingContext, program: WebGLProgram, modelMatrix: M4, cameraMatrix: M4, cameraPosition: Vec3) {
+function drawLights(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, modelMatrix: M4, cameraMatrix: M4, cameraPosition: Vec3) {
     gl.useProgram(program);
 
-    gl.enableVertexAttribArray(DrawLight.a_vertex);
-    gl.enableVertexAttribArray(DrawLight.a_color);
+    gl.enableVertexAttribArray(attributes.a_vertex);
+    gl.enableVertexAttribArray(attributes.a_color);
 
     var rgb = [];
     for(var i = 0; i < lightBufferData.length; i+=9) {
@@ -781,13 +780,13 @@ function drawLights(gl:WebGL2RenderingContext, program: WebGLProgram, modelMatri
     var colorBuffer = createStaticVertexBuffer(gl, new Uint8Array(rgb));
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(DrawLight.a_vertex, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.vertexAttribPointer(DrawLight.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+    gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
  
     var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-    gl.uniformMatrix4fv(DrawLight.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
+    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
 
     gl.drawArrays(gl.TRIANGLES, 0, lightBufferData.length / 3);
 }
@@ -844,7 +843,6 @@ function drawScene(now: number = 0, skip: boolean = false) {
             textureCoords = getTexture(surface);
         }
         if(keys["ArrowLeft"]) {
-            console.log(outerEdge,innerEdge)
             if(outerEdge == 0) innerEdge += 1;
             else outerEdge -= 1;
 
@@ -871,15 +869,16 @@ function drawScene(now: number = 0, skip: boolean = false) {
     var cameraMatrix: M4 = getCameraMatrix();
     var cameraPosition: Vec3 = new Vec3(xCamera,yCamera,zCamera); 
 
-    // Drawing bezier surface
-    //drawBezier(gl, drawBezierProgram, cameraMatrix, cameraPosition);
-    drawCar(gl, drawCarProgram, cameraMatrix, cameraPosition);
-    drawRoad(gl, drawRoadProgram, roadModel, cameraMatrix, cameraPosition);
-    drawLights(gl, drawLightProgram, getRightLightModelMatrix(), cameraMatrix, cameraPosition);
-    drawLights(gl, drawLightProgram, getLeftLightModelMatrix(), cameraMatrix, cameraPosition);
+    //drawBezier(gl, drawBezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
+    drawCar(gl, drawCarProgram, carAttributes, cameraMatrix, cameraPosition);
+    drawRoad(gl, drawRoadProgram, roadAttributes, cameraMatrix, cameraPosition,2000);
+    drawRoad(gl, drawRoadProgram, roadAttributes, cameraMatrix, cameraPosition,1000);
+    drawRoad(gl, drawRoadProgram, roadAttributes, cameraMatrix, cameraPosition,0);
+    drawRoad(gl, drawRoadProgram, roadAttributes, cameraMatrix, cameraPosition,-1000);
+    drawLights(gl, drawLightProgram, lightAttributes, getRightLightModelMatrix(), cameraMatrix, cameraPosition);
+    drawLights(gl, drawLightProgram, lightAttributes, getLeftLightModelMatrix(), cameraMatrix, cameraPosition);
     loadTexture = false;
 
-    // Draw a car model
 
 
     if(animation && !skip) {

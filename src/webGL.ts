@@ -57,3 +57,50 @@ export function setRenderingCanvas(gl: WebGL2RenderingContext, canvas: HTMLCanva
     gl.enable(gl.DEPTH_TEST);
     gl.viewport(0, 0, canvas.width, canvas.height);
 }
+
+export class GlAttributes {
+    
+    // Attribute locations
+    readonly a_texcoord: number;
+    readonly a_tangent: number;
+    readonly a_normal: number; 
+    readonly a_vertex: number;
+    readonly a_color: number;
+
+    // Uniform locations
+    readonly u_worldViewProjection: WebGLUniformLocation | null;
+    readonly isNormalMapFSLocation: WebGLUniformLocation | null;
+    readonly u_lightWorldPosition: WebGLUniformLocation | null;
+    readonly isNormalMapVSLocation: WebGLUniformLocation | null;
+    readonly isTextureLocation: WebGLUniformLocation | null;
+    readonly u_eyePosition: WebGLUniformLocation | null;
+    readonly u_lightColor: WebGLUniformLocation | null;
+    readonly u_world: WebGLUniformLocation | null;
+    readonly u_kd: WebGLUniformLocation | null;
+    readonly u_ks: WebGLUniformLocation | null; 
+    readonly u_m: WebGLUniformLocation | null;
+
+    constructor(gl: WebGL2RenderingContext, program: WebGLProgram) {
+
+        // Attribute locations
+        this.a_texcoord = gl.getAttribLocation(program, 'a_texcoord');
+        this.a_tangent = gl.getAttribLocation(program, 'a_tangent');
+        this.a_normal = gl.getAttribLocation(program, 'a_normal');
+        this.a_vertex = gl.getAttribLocation(program, 'a_vertex');
+        this.a_color = gl.getAttribLocation(program, 'a_color');
+
+        // Uniform locations
+        this.u_worldViewProjection = gl.getUniformLocation(program, 'u_worldViewProjection');
+        this.u_lightWorldPosition = gl.getUniformLocation(program, 'u_lightWorldPosition');
+        this.isNormalMapFSLocation = gl.getUniformLocation(program, 'isNormalMapFS');
+        this.isNormalMapVSLocation = gl.getUniformLocation(program, 'isNormalMapVS');
+        this.u_eyePosition = gl.getUniformLocation(program, 'u_eyePosition');
+        this.isTextureLocation = gl.getUniformLocation(program, 'isTexture');
+        this.u_lightColor = gl.getUniformLocation(program, 'u_lightColor');
+        this.u_world = gl.getUniformLocation(program, 'u_world');
+        this.u_kd = gl.getUniformLocation(program, 'u_kd');
+        this.u_ks = gl.getUniformLocation(program, 'u_ks');
+        this.u_m = gl.getUniformLocation(program, 'u_m');
+    }
+
+}

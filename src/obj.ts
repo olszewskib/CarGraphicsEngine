@@ -51,7 +51,6 @@ export class ObjLoader{
 				// f 34//36 34//35 34//36
 				case "f":
 					
-                    console.log(cVert);
                     itm = line.split(" ");
 					itm.shift();
 					isQuad = false;
