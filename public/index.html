@@ -22,22 +22,22 @@
               <h2>Camera Position</h2>
               <li class="centered-range">
                 <h2>x:</h2>
-                <input type="range" id="xCamera" min="-5000" max="5000" value="0"></li>
+                <input type="range" id="xCamera" min="-5000" max="5000" value="500"></li>
               <li class="centered-range">
                 <h2>y:</h2>
-                <input type="range" id="yCamera" min="-5000" max="5000" value="0"></li>
+                <input type="range" id="yCamera" min="-5000" max="5000" value="-200"></li>
               <li class="centered-range">
                 <h2 margin="0">z:</h2>
-                <input type="range" id="zCamera" min="0" max="5000" value="100"></li>
+                <input type="range" id="zCamera" min="0" max="5000" value="150"></li>
             </ul>
             <ul>
               <h2>Camera Direction</h2>
               <li class="centered-range">
                 <h2>x:</h2>
-                <input type="range" id="xCameraDirection" min="-5000" max="5000" value="0"></li>
+                <input type="range" id="xCameraDirection" min="-5000" max="5000" value="500"></li>
               <li class="centered-range">
                 <h2>y:</h2>
-                <input type="range" id="yCameraDirection" min="-5000" max="5000" value="0"></li>
+                <input type="range" id="yCameraDirection" min="-5000" max="5000" value="500"></li>
               <li class="centered-range">
                 <h2 margin="0">z:</h2>
                 <input type="range" id="zCameraDirection" min="-5000" max="5000" value="0"></li>
@@ -46,13 +46,13 @@
               <h2>Light Location</h2>
               <li class="centered-range">
                 <h2>x:</h2>
-                <input type="range" id="xLightLocation" min="-500" max="1500" value="500"></li>
+                <input type="range" id="xLightLocation" min="-500" max="1500" value="300"></li>
               <li class="centered-range">
                 <h2>y:</h2>
-                <input type="range" id="yLightLocation" min="-500" max="1500" value="800"></li>
+                <input type="range" id="yLightLocation" min="-500" max="1500" value="200"></li>
               <li class="centered-range">
                 <h2 margin="0">z:</h2>
-                <input type="range" id="zLightLocation" min="0" max="1000" value="300"></li>
+                <input type="range" id="zLightLocation" min="0" max="1000" value="1000"></li>
             </ul>
             <ul>
               <h2>Mods</h2>
@@ -65,6 +65,42 @@
               <li class="centered-range">
                 <h2>Mr:</h2>
                 <input type="range" id="mirror" min="0" max="1000" value="150"></li>
+            </ul>
+            <ul>
+              <h2>Translation</h2>
+              <li class="centered-range">
+                <h2>dx:</h2>
+                <input type="range" id="Tx" min="0" max="1000" value="376" step="1"></li>
+              <li class="centered-range">
+                <h2>dy:</h2>
+                <input type="range" id="Ty" min="0" max="500" value="152" step="1"></li>
+              <li class="centered-range">
+                <h2>dz:</h2>
+                <input type="range" id="Tz" min="0" max="500" value="128" step="1"></li>
+            </ul>
+            <ul>
+              <h2>Rotation</h2>
+              <li class="centered-range">
+                <h2>drx:</h2>
+                <input type="range" id="Rx" min="0" max="360" value="118" step="1"></li>
+              <li class="centered-range">
+                <h2>dry:</h2>
+                <input type="range" id="Ry" min="0" max="360" value="177" step="1"></li>
+              <li class="centered-range">
+                <h2>drz:</h2>
+                <input type="range" id="Rz" min="0" max="360" value="0" step="1"></li>
+            </ul>
+            <ul>
+              <h2>Scaling</h2>
+              <li class="centered-range">
+                <h2>sx:</h2>
+                <input type="range" id="Sx" min="0" max="50" value="28" step="1"></li>
+              <li class="centered-range">
+                <h2>sy:</h2>
+                <input type="range" id="Sy" min="0" max="50" value="12" step="1"></li>
+              <li class="centered-range">
+                <h2>sz:</h2>
+                <input type="range" id="Sz" min="0" max="50" value="41" step="1"></li>
             </ul>
           </td>
           <td>
@@ -174,6 +210,8 @@
     <img hidden id="floorNormal" src="resources/normalMaps/floorNormal.png"></img>
     <img hidden id="pipes" src="resources/textures/pipes.png"></img>
     <img hidden id="pipesNormal" src="resources/normalMaps/pipesNormal.png"></img>
+    <img hidden id="road" src="resources/obj/road/rd.png"></img>
+    <img hidden id="roadNormal" src="resources/obj/road/rdn.png"></img>
 
 
   </body>
