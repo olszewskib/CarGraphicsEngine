@@ -634,7 +634,7 @@ function drawScene(now: number = 0, skip: boolean = false) {
     //console.log('Scale', Sx, Sy, Sz);
 
     //drawBezier(gl, drawBezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
-    car.drawCar(gl, carProgram, carAttributes, cameraMatrix, cameraPosition);
+    car.draw(gl, carProgram, carAttributes, cameraMatrix, cameraPosition);
 
     road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 0);
     road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 1000);
@@ -643,6 +643,8 @@ function drawScene(now: number = 0, skip: boolean = false) {
 
     // we are on the right track with this drawing, now we need to compress it so that draw car draws its lights as well
     carLights.forEach(light => { light.draw(gl, drawLightProgram, lightAttributes, cameraMatrix); });
+
+    car.move(M4.translation(0,Ty,0));
 
     //leftRearLight.location.v1 = Tx;
     //leftRearLight.location.v2 = Ty;

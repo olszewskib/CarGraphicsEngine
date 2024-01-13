@@ -8,6 +8,7 @@ import { M4 } from "../math/m4";
 export class Car {
     
     model: CarModel;
+    modelMatrix: M4;
     readonly mainLight: Vec3;
     readonly carLights: CarLight[];
 
@@ -15,9 +16,30 @@ export class Car {
         this.model = model;
         this.mainLight = mainLight;
         this.carLights = lights;
+        this.modelMatrix = new M4();
+        this.setInitialModelMatrix();
+
     }
 
-    drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
+    private setInitialModelMatrix() {
+        var modelMatrix = M4.scaling(200,200,200);
+        var xRotationMatrix = M4.rotationX(deg2rad(90));
+        var zRotationMatrix = M4.rotationZ(deg2rad(180));
+        var translationMatrix = M4.translation(500,500,115);
+        modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
+        modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
+        modelMatrix = M4.multiply(modelMatrix,translationMatrix);
+        this.modelMatrix = modelMatrix;
+    }
+
+    move(transformationMatrix: M4): void {
+        this.modelMatrix = M4.multiply(this.modelMatrix,transformationMatrix);
+        this.carLights.forEach(light => { 
+            light.move(transformationMatrix);
+        });
+    }
+
+    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
         
         gl.useProgram(program);
     
@@ -76,16 +98,9 @@ export class Car {
         gl.activeTexture(gl.TEXTURE1 + 0.0);
         gl.bindTexture(gl.TEXTURE_2D, this.model.normalTexture);
 
-        var modelMatrix = M4.scaling(200,200,200);
-        var xRotationMatrix = M4.rotationX(deg2rad(90));
-        var zRotationMatrix = M4.rotationZ(deg2rad(180));
-        var translationMatrix = M4.translation(500,500,115);
-        modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
-        modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
-        modelMatrix = M4.multiply(modelMatrix,translationMatrix);
     
-        var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-        gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
+        var worldViewProjectionMatrix = M4.multiply(this.modelMatrix,cameraMatrix);
+        gl.uniformMatrix4fv(attributes.u_world, false, this.modelMatrix.convert());
         gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
     
         gl.drawArrays(gl.TRIANGLES, 0, this.model.verticesBuffer.length / 3);

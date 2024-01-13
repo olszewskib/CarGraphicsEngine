@@ -5,11 +5,12 @@ import { Vec3 } from "../math/vec3";
 import { CarLightModel } from "./carLightModel";
 
 export class CarLight {
-    location: Vec3;
+    location: Vec3; // this is used to determine the location of the light in the world
     scale: Vec3;
     rotation: Vec3;
     color: Vec3;
     model: CarLightModel;
+    modelMatrix: M4;
 
     constructor(location: Vec3, rotation: Vec3, scale: Vec3, color: Vec3, model: CarLightModel) {
         this.location = new Vec3(location.v1,location.v2,location.v3);
@@ -17,10 +18,11 @@ export class CarLight {
         this.rotation = new Vec3(rotation.v1,rotation.v2,rotation.v3);
         this.color = new Vec3(color.v1,color.v2,color.v3);
         this.model = model;
+        this.modelMatrix = new M4();
+        this.setInitialModelMatrix();
     }
 
-    getModelMatrix(): M4 {
-
+    private setInitialModelMatrix() {
         var modelMatrix = M4.scaling(this.scale.v1,this.scale.v2,this.scale.v3);
         var xRotationMatrix = M4.rotationX(deg2rad(this.rotation.v1));
         var yRotationMatrix = M4.rotationY(deg2rad(this.rotation.v2));
@@ -30,8 +32,18 @@ export class CarLight {
         modelMatrix = M4.multiply(modelMatrix,yRotationMatrix);
         modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
         modelMatrix = M4.multiply(modelMatrix,translationMatrix);
+        this.modelMatrix = modelMatrix;
+    }
+
+    move(transaltionMatrix: M4) {
+
+        this.modelMatrix = M4.multiply(this.modelMatrix,transaltionMatrix);
+        var x = this.modelMatrix.values[3][0];
+        var y = this.modelMatrix.values[3][1];
+        var z = this.modelMatrix.values[3][2];
+        var w = this.modelMatrix.values[3][3];
+        this.location = new Vec3(x/w,y/w,z/w);
         
-        return modelMatrix;
     }
     
     draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4) {
@@ -57,7 +69,7 @@ export class CarLight {
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
  
-    var worldViewProjectionMatrix = M4.multiply( this.getModelMatrix() ,cameraMatrix);
+    var worldViewProjectionMatrix = M4.multiply( this.modelMatrix ,cameraMatrix);
     gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
 
     gl.drawArrays(gl.TRIANGLES, 0, this.model.bufferData.length / 3);
