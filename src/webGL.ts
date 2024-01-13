@@ -58,6 +58,47 @@ export function setRenderingCanvas(gl: WebGL2RenderingContext, canvas: HTMLCanva
     gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
+export function bindTexture(gl: WebGL2RenderingContext, program: WebGLProgram, tex: HTMLImageElement, nmap: HTMLImageElement): void {
+     
+    // loading texture
+     var texture = gl.createTexture();
+     gl.bindTexture(gl.TEXTURE_2D,texture);
+     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
+
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+     gl.bindTexture(gl.TEXTURE_2D, texture);
+     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, tex);
+
+     // loading normal map
+     var normalTexture = gl.createTexture();
+     gl.bindTexture(gl.TEXTURE_2D,normalTexture);
+     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
+
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+     gl.bindTexture(gl.TEXTURE_2D, normalTexture);
+     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, nmap);
+
+     // binding textures
+     var texLocation = gl.getUniformLocation(program,'tex');
+     var normaltexLocation = gl.getUniformLocation(program,'normalTex');
+
+     gl.uniform1i(texLocation, 0);
+     gl.uniform1i(normaltexLocation, 1);
+
+     gl.activeTexture(gl.TEXTURE0 + 0.0);
+     gl.bindTexture(gl.TEXTURE_2D, texture);
+     gl.activeTexture(gl.TEXTURE1 + 0.0);
+     gl.bindTexture(gl.TEXTURE_2D, normalTexture);
+}
+
 export class GlAttributes {
     
     // Attribute locations
