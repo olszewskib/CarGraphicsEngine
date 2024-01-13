@@ -18,6 +18,8 @@ import { M4 } from "./models/math/m4";
 import { CarLight } from "./models/lights/carLight";
 import { RoadModel } from "./models/road/roadModel";
 import { Road } from "./models/road/road";
+import { CarModel } from "./models/car/carModel";
+import { Car } from "./models/car/car";
 
 const precisionSlider = document.getElementById("precisionSlider") as HTMLInputElement;
 
@@ -489,131 +491,6 @@ function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, attributes
     gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
 }
 
-// ------------------------------------------------------------------------- Car -------------------------------------------------------------------------
-
-const carObjUrl = 'resources/obj/porsche/Porsche_911_GT2.obj';
-var carModel = new OBJParser();
-
-await fetch(carObjUrl)
-  .then(response => response.text())
-  .then(objContent => {
-    carModel.parse(objContent);
-  })
-  .catch(error => {
-    console.error('Error fetching the OBJ file:', error);
-  });
-
-const drawCarProgram = getProgram(gl,carVertexShader,carFragmentShader);
-if(!drawCarProgram) throw new Error("getProgramError");
-
-const carAttributes = new GlAttributes(gl,drawCarProgram);
-
-function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
-        
-    gl.useProgram(program);
-
-    gl.enableVertexAttribArray(attributes.a_vertex);
-    gl.enableVertexAttribArray(attributes.a_color);
-    gl.enableVertexAttribArray(attributes.a_texcoord);
-    gl.enableVertexAttribArray(attributes.a_normal);
-
-    gl.uniform3fv(attributes.u_lightWorldPosition, lightLocation.getVec3ForBuffer());
-    gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
-    gl.uniform3fv(attributes.u_lightColor,lightColorVector.getVec3ForBuffer());
-    gl.uniform1f(attributes.u_m,mirror)
-    gl.uniform1f(attributes.u_ks,ks);
-    gl.uniform1f(attributes.u_kd,kd);
-
-    var color = [0,255,0];
-    var rgb = [];
-    for(var i = 0; i < carModel.vertices.length; i+=9) {
-        rgb.push(...color);
-        rgb.push(...color);
-        rgb.push(...color);
-    }
-
-    var vertexBuffer = createStaticVertexBuffer(gl, new Float32Array(carModel.vertices));
-    var colorBuffer = createStaticVertexBuffer(gl, new Uint8Array(rgb));
-    var normalsBuffer = createStaticVertexBuffer(gl, new Float32Array(carModel.normals));
-    var textureBuffer = createStaticVertexBuffer(gl, new Float32Array(carModel.textures));
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
-
-    if(loadTexture) {
-
-        // loading texture
-        var texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D,texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-        var image = document.getElementById(textureID) as HTMLImageElement;
-        if(image == null) {
-            throw new Error("imageError");
-        }
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-        // loading normal map
-        var normalTexture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D,normalTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-        var image = document.getElementById(normalMapID) as HTMLImageElement;
-        if(image == null) {
-            throw new Error("imageError");
-        }
-        gl.bindTexture(gl.TEXTURE_2D, normalTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-        // binding textures
-        var texLocation = gl.getUniformLocation(program,'tex');
-        var normaltexLocation = gl.getUniformLocation(program,'normalTex');
-
-        gl.uniform1i(texLocation, 0);
-        gl.uniform1i(normaltexLocation, 1);
-
-        gl.activeTexture(gl.TEXTURE0 + 0.0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.activeTexture(gl.TEXTURE1 + 0.0);
-        gl.bindTexture(gl.TEXTURE_2D, normalTexture);
-
-    }
-
-    var modelMatrix = M4.scaling(200,200,200);
-    var xRotationMatrix = M4.rotationX(deg2rad(90));
-    var zRotationMatrix = M4.rotationZ(deg2rad(180));
-    var translationMatrix = M4.translation(500,500,115);
-    modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
-
-    var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-    gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
-
-    gl.drawArrays(gl.TRIANGLES, 0, carModel.vertices.length / 3);
-}
-
 // ------------------------------------------------------------------------- Lights -------------------------------------------------------------------------
 
 const lightMesh = new CarLightModel(20,1);
@@ -631,6 +508,28 @@ if(!drawLightProgram) throw new Error("getProgramError");
 
 const lightAttributes = new GlAttributes(gl,drawLightProgram);
 
+// ------------------------------------------------------------------------- Car -------------------------------------------------------------------------
+
+const carObjUrl = 'resources/obj/porsche/Porsche_911_GT2.obj';
+var carObjModel = new OBJParser();
+
+await fetch(carObjUrl)
+  .then(response => response.text())
+  .then(objContent => {
+    carObjModel.parse(objContent);
+  })
+  .catch(error => {
+    console.error('Error fetching the OBJ file:', error);
+  });
+
+const drawCarProgram = getProgram(gl,carVertexShader,carFragmentShader);
+if(!drawCarProgram) throw new Error("getProgramError");
+
+var carModel = new CarModel(carObjModel.verticesBuffer,carObjModel.normalsBuffer,carObjModel.textureBuffer, mirror, ks, kd);
+var car = new Car(carModel,lightLocation,carLights);
+
+const carAttributes = new GlAttributes(gl,drawCarProgram);
+
 // ------------------------------------------------------------------------- Road -------------------------------------------------------------------------
 
 const roadObjUrl = 'resources/obj/road/rd.obj';
@@ -645,19 +544,20 @@ await fetch(roadObjUrl)
     console.error('Error fetching the OBJ file:', error);
   });
  
+const roadProgram = getProgram(gl,roadVertexShader,roadFragmentShader);
+if(!roadProgram) throw new Error("getProgramError");
+
+var roadModel = new RoadModel(triangleVertices,textureCoords,mirror,ks,kd);
+var road = new Road(roadModel,lightLocation,carLights);
+
 var tex = document.getElementById(textureID) as HTMLImageElement;
 if(tex == null) throw new Error("imageError");
 
 var nmap = document.getElementById(normalMapID) as HTMLImageElement;
 if(nmap == null) throw new Error("imageError"); 
 
-var roadModel = new RoadModel(triangleVertices,textureCoords,mirror,ks,kd);
-var road = new Road(roadModel,lightLocation,carLights);
-
-const roadProgram = getProgram(gl,roadVertexShader,roadFragmentShader);
-if(!roadProgram) throw new Error("getProgramError");
-
 road.bind(gl,roadProgram,tex,nmap);
+
 const roadAttributes = new GlAttributes(gl,roadProgram);
 
 // ------------------------------------------------------------------------- Drawing -------------------------------------------------------------------------
@@ -715,7 +615,7 @@ function drawScene(now: number = 0, skip: boolean = false) {
     //console.log('Scale', Sx, Sy, Sz);
 
     //drawBezier(gl, drawBezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
-    drawCar(gl, drawCarProgram, carAttributes, cameraMatrix, cameraPosition);
+    car.drawCar(gl, drawCarProgram, carAttributes, cameraMatrix, cameraPosition);
 
     road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 0);
     road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 1000);
@@ -723,10 +623,7 @@ function drawScene(now: number = 0, skip: boolean = false) {
     road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 2000);
 
     // we are on the right track with this drawing, now we need to compress it so that draw car draws its lights as well
-    rightHeadLight.draw(gl, drawLightProgram, lightAttributes, cameraMatrix);
-    leftHeadLight.draw(gl, drawLightProgram, lightAttributes, cameraMatrix);
-    rightRearLight.draw(gl, drawLightProgram, lightAttributes, cameraMatrix);
-    leftRearLight.draw(gl, drawLightProgram, lightAttributes, cameraMatrix);
+    carLights.forEach(light => { light.draw(gl, drawLightProgram, lightAttributes, cameraMatrix); });
 
     //leftRearLight.location.v1 = Tx;
     //leftRearLight.location.v2 = Ty;
@@ -739,8 +636,6 @@ function drawScene(now: number = 0, skip: boolean = false) {
     //leftRearLight.scale.v1 = Sx;
     //leftRearLight.scale.v2 = Sy;
     //leftRearLight.scale.v3 = Sz;
-    
-    
     
     loadTexture = false;
 

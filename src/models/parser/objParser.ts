@@ -6,6 +6,9 @@ export class OBJParser {
     vertices: number[] = [];
     textures: number[] = [];
     normals: number[] = [];
+    verticesBuffer: Float32Array = new Float32Array();
+    normalsBuffer: Float32Array = new Float32Array();
+    textureBuffer: Float32Array = new Float32Array();
 
     parse(objContent: string) {
         const lines = objContent.split("\n");
@@ -37,5 +40,8 @@ export class OBJParser {
                     break;
             }
         }
+        this.verticesBuffer = new Float32Array(this.vertices);
+        this.normalsBuffer = new Float32Array(this.normals);
+        this.textureBuffer = new Float32Array(this.textures);
     }
 }
