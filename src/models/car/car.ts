@@ -1,4 +1,4 @@
-import { GlAttributes, bindTexture, createStaticVertexBuffer } from "../../webGL";
+import { GlAttributes, createStaticVertexBuffer } from "../../webGL";
 import { CarLight } from "../lights/carLight";
 import { Vec3 } from "../math/vec3";
 import { CarModel } from "./carModel";
@@ -15,10 +15,6 @@ export class Car {
         this.model = model;
         this.mainLight = mainLight;
         this.carLights = lights;
-    }
-
-    bind(gl: WebGL2RenderingContext, program: WebGLProgram, texture: HTMLImageElement, normalMap: HTMLImageElement) {
-        bindTexture(gl,program,texture,normalMap);
     }
 
     drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
@@ -72,6 +68,14 @@ export class Car {
         gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
         gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
     
+        gl.uniform1i(attributes.u_texture, 0);
+        gl.uniform1i(attributes.u_normalTexture, 1);
+   
+        gl.activeTexture(gl.TEXTURE0 + 0.0);
+        gl.bindTexture(gl.TEXTURE_2D, this.model.texture);
+        gl.activeTexture(gl.TEXTURE1 + 0.0);
+        gl.bindTexture(gl.TEXTURE_2D, this.model.normalTexture);
+
         var modelMatrix = M4.scaling(200,200,200);
         var xRotationMatrix = M4.rotationX(deg2rad(90));
         var zRotationMatrix = M4.rotationZ(deg2rad(180));

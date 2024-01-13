@@ -1,4 +1,4 @@
-import { GlAttributes, bindTexture, createStaticVertexBuffer } from "../../webGL";
+import { GlAttributes, createStaticVertexBuffer } from "../../webGL";
 import { CarLight } from "../lights/carLight";
 import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
@@ -15,11 +15,6 @@ export class Road {
         this.model = model;
         this.mainLight = mainLight;
         this.carLights = lights;
-    }
-
-    bind(gl: WebGL2RenderingContext, program: WebGLProgram, texture: HTMLImageElement, normalMap: HTMLImageElement) {
-        bindTexture(gl,program,texture,normalMap);
-
     }
 
     draw(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3, dy: number) {
@@ -45,6 +40,8 @@ export class Road {
         gl.uniform1f(attributes.u_m, this.model.mirror);
         gl.uniform1f(attributes.u_ks, this.model.ks);
         gl.uniform1f(attributes.u_kd, this.model.kd);
+        gl.uniform1i(attributes.u_texture, 0);
+        gl.uniform1i(attributes.u_normalTexture, 1);
     
         var vertexBuffer = createStaticVertexBuffer(gl, this.model.verticesBuffer);
         var textureBuffer = createStaticVertexBuffer(gl, this.model.textureBuffer);
@@ -54,7 +51,12 @@ export class Road {
     
         gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
         gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
-    
+   
+        gl.activeTexture(gl.TEXTURE0 + 0.0);
+        gl.bindTexture(gl.TEXTURE_2D, this.model.texture);
+        gl.activeTexture(gl.TEXTURE1 + 0.0);
+        gl.bindTexture(gl.TEXTURE_2D, this.model.normalTexture);
+
         var modelMatrix = M4.scaling(1000,1000,1000);
         var zRotationMatrix = M4.rotationZ(deg2rad(90));
         var translationMatrix = M4.translation(1000,dy,0);

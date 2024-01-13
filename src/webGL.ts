@@ -58,7 +58,11 @@ export function setRenderingCanvas(gl: WebGL2RenderingContext, canvas: HTMLCanva
     gl.viewport(0, 0, canvas.width, canvas.height);
 }
 
-export function bindTexture(gl: WebGL2RenderingContext, program: WebGLProgram, tex: HTMLImageElement, nmap: HTMLImageElement): void {
+export function createTexture(gl: WebGL2RenderingContext,
+    program: WebGLProgram,
+    tex: HTMLImageElement,
+    normalMap: HTMLImageElement,
+    ) {
     
     gl.useProgram(program);
 
@@ -86,19 +90,9 @@ export function bindTexture(gl: WebGL2RenderingContext, program: WebGLProgram, t
      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
      gl.bindTexture(gl.TEXTURE_2D, normalTexture);
-     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, nmap);
+     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, normalMap);
 
-     // binding textures
-     var texLocation = gl.getUniformLocation(program,'tex');
-     var normaltexLocation = gl.getUniformLocation(program,'normalTex');
-
-     gl.uniform1i(texLocation, 0);
-     gl.uniform1i(normaltexLocation, 1);
-
-     gl.activeTexture(gl.TEXTURE0 + 0.0);
-     gl.bindTexture(gl.TEXTURE_2D, texture);
-     gl.activeTexture(gl.TEXTURE1 + 0.0);
-     gl.bindTexture(gl.TEXTURE_2D, normalTexture);
+     return [texture,normalTexture];
 }
 
 export class GlAttributes {
@@ -122,6 +116,8 @@ export class GlAttributes {
     readonly u_kd: WebGLUniformLocation | null;
     readonly u_ks: WebGLUniformLocation | null; 
     readonly u_m: WebGLUniformLocation | null;
+    readonly u_texture: WebGLUniformLocation | null;
+    readonly u_normalTexture: WebGLUniformLocation | null;
 
     constructor(gl: WebGL2RenderingContext, program: WebGLProgram) {
 
@@ -144,6 +140,8 @@ export class GlAttributes {
         this.u_kd = gl.getUniformLocation(program, 'u_kd');
         this.u_ks = gl.getUniformLocation(program, 'u_ks');
         this.u_m = gl.getUniformLocation(program, 'u_m');
+        this.u_texture = gl.getUniformLocation(program, 'u_texture');
+        this.u_normalTexture = gl.getUniformLocation(program, 'u_normalTexture');
     }
 
 }

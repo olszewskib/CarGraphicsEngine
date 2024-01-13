@@ -1,5 +1,5 @@
 import { BezierSurface, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/BezierSurface";
-import { GlAttributes, bindTexture, createStaticVertexBuffer, getProgram, setRenderingCanvas } from "./webGL";
+import { GlAttributes, createTexture, createStaticVertexBuffer, getProgram, setRenderingCanvas } from "./webGL";
 import { bezierFragmentShaderSourceCode } from "./lib/bezier/fragmentShader";
 import { bezierVertexShaderSourceCode } from "./lib/bezier/vertexShader";
 import { lightsFragmentShader } from "./lib/lights/lightsFragmentShader";
@@ -522,13 +522,31 @@ await fetch(carObjUrl)
     console.error('Error fetching the OBJ file:', error);
   });
 
-const drawCarProgram = getProgram(gl,carVertexShader,carFragmentShader);
-if(!drawCarProgram) throw new Error("getProgramError");
+const carProgram = getProgram(gl,carVertexShader,carFragmentShader);
+if(!carProgram) throw new Error("getProgramError");
 
-var carModel = new CarModel(carObjModel.verticesBuffer,carObjModel.normalsBuffer,carObjModel.textureBuffer, mirror, ks, kd);
+var carTexture = document.getElementById('metal') as HTMLImageElement;
+if(carTexture == null) throw new Error("imageError");
+
+var carNormalMap = document.getElementById(normalMapID) as HTMLImageElement;
+if(carNormalMap == null) throw new Error("imageError");
+
+var carTextures = createTexture(gl,carProgram,carTexture,carNormalMap);
+if(carTextures[0] == null || carTextures[1] == null) throw new Error("textureError");
+
+var carModel = new CarModel(carObjModel.verticesBuffer,
+        carObjModel.normalsBuffer,
+        carObjModel.textureBuffer,
+        carTextures[0],
+        carTextures[1],
+        mirror,
+        ks, 
+        kd
+    );
+
 var car = new Car(carModel,lightLocation,carLights);
 
-const carAttributes = new GlAttributes(gl,drawCarProgram);
+const carAttributes = new GlAttributes(gl,carProgram);
 
 // ------------------------------------------------------------------------- Road -------------------------------------------------------------------------
 
@@ -547,16 +565,17 @@ await fetch(roadObjUrl)
 const roadProgram = getProgram(gl,roadVertexShader,roadFragmentShader);
 if(!roadProgram) throw new Error("getProgramError");
 
-var roadModel = new RoadModel(triangleVertices,textureCoords,mirror,ks,kd);
+var roadTexture = document.getElementById(textureID) as HTMLImageElement;
+if( roadTexture == null) throw new Error("imageError");
+
+var roadNormalMap = document.getElementById(normalMapID) as HTMLImageElement;
+if( roadNormalMap == null) throw new Error("imageError"); 
+
+var roadTextures = createTexture(gl,roadProgram, roadTexture, roadNormalMap);
+if(roadTextures[0] == null || roadTextures[1] == null) throw new Error("textureError");
+
+var roadModel = new RoadModel(triangleVertices,textureCoords,roadTextures[0],roadTextures[1],mirror,ks,kd);
 var road = new Road(roadModel,lightLocation,carLights);
-
-var tex = document.getElementById(textureID) as HTMLImageElement;
-if(tex == null) throw new Error("imageError");
-
-var nmap = document.getElementById(normalMapID) as HTMLImageElement;
-if(nmap == null) throw new Error("imageError"); 
-
-road.bind(gl,roadProgram,tex,nmap);
 
 const roadAttributes = new GlAttributes(gl,roadProgram);
 
@@ -595,7 +614,7 @@ function drawScene(now: number = 0, skip: boolean = false) {
 
     if(!gl) throw new Error("webGL not supported");
     if(!drawBezierProgram) throw new Error("getProgramError");
-    if(!drawCarProgram) throw new Error("getProgramError");
+    if(!carProgram) throw new Error("getProgramError");
     if(!roadProgram) throw new Error("getProgramError");
     if(!drawLightProgram) throw new Error("getProgramError");
     
@@ -615,7 +634,7 @@ function drawScene(now: number = 0, skip: boolean = false) {
     //console.log('Scale', Sx, Sy, Sz);
 
     //drawBezier(gl, drawBezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
-    car.drawCar(gl, drawCarProgram, carAttributes, cameraMatrix, cameraPosition);
+    car.drawCar(gl, carProgram, carAttributes, cameraMatrix, cameraPosition);
 
     road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 0);
     road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 1000);
@@ -637,7 +656,6 @@ function drawScene(now: number = 0, skip: boolean = false) {
     //leftRearLight.scale.v2 = Sy;
     //leftRearLight.scale.v3 = Sz;
     
-    loadTexture = false;
 
     if(animation && !skip) {
         animationID = requestAnimationFrame(drawScene);

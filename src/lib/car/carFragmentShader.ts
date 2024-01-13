@@ -10,8 +10,8 @@ in vec3 surfaceToEye;
 in vec2 texCoord;
 
 uniform vec3 u_lightColor[NO_LIGHTS];
-//uniform sampler2D normalTex;
-//uniform sampler2D tex;
+uniform sampler2D u_texture;
+uniform sampler2D u_normalTexture;
 uniform float u_kd;
 uniform float u_ks;
 uniform float u_m;
@@ -36,7 +36,8 @@ void main () {
     totalReflect += reflect * u_lightColor[i];
   }
 
-  outputColor = vec4(fragmentColor, 1.0);
+  //outputColor = vec4(fragmentColor, 1.0);
+  outputColor = texture(u_texture,texCoord);
   outputColor.rgb *= (totalLight * u_kd);
   outputColor.rgb += (totalReflect * u_ks);
   
