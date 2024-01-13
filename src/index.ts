@@ -1,6 +1,5 @@
 import { BezierSurface, getColors, getNormals, getTangents, getTexture, getVertices } from "./models/bezier/BezierSurface";
 import { GlAttributes, bindTexture, createStaticVertexBuffer, getProgram, setRenderingCanvas } from "./webGL";
-import { drawLights, getLeftLightData, getRightLightData } from "./models/lights/drawLights";
 import { bezierFragmentShaderSourceCode } from "./lib/bezier/fragmentShader";
 import { bezierVertexShaderSourceCode } from "./lib/bezier/vertexShader";
 import { lightsFragmentShader } from "./lib/lights/lightsFragmentShader";
@@ -14,8 +13,11 @@ import { carVertexShader } from "./lib/car/carVertexShader";
 import { getCameraMatrix } from "./models/camera/camera";
 import { deg2rad } from "./models/math/angles";
 import { Vec3 } from "./models/math/vec3";
-import { OBJParser } from "./objParser";
+import { OBJParser } from "./models/parser/objParser";
 import { M4 } from "./models/math/m4";
+import { CarLight } from "./models/lights/carLight";
+import { RoadModel } from "./models/road/roadModel";
+import { Road } from "./models/road/road";
 
 const precisionSlider = document.getElementById("precisionSlider") as HTMLInputElement;
 
@@ -522,11 +524,12 @@ function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: G
     gl.uniform1f(attributes.u_ks,ks);
     gl.uniform1f(attributes.u_kd,kd);
 
+    var color = [0,255,0];
     var rgb = [];
     for(var i = 0; i < carModel.vertices.length; i+=9) {
-        rgb.push(...[255,0,0]);
-        rgb.push(...[255,0,0]);
-        rgb.push(...[255,0,0]);
+        rgb.push(...color);
+        rgb.push(...color);
+        rgb.push(...color);
     }
 
     var vertexBuffer = createStaticVertexBuffer(gl, new Float32Array(carModel.vertices));
@@ -611,90 +614,51 @@ function drawCar(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: G
     gl.drawArrays(gl.TRIANGLES, 0, carModel.vertices.length / 3);
 }
 
-// ------------------------------------------------------------------------- Road -------------------------------------------------------------------------
-const roadObjUrl = 'resources/obj/road/rd.obj';
-var roadModel = new OBJParser();
-
-await fetch(roadObjUrl)
-  .then(response => response.text())
-  .then(objContent => {
-    roadModel.parse(objContent);
-  })
-  .catch(error => {
-    console.error('Error fetching the OBJ file:', error);
-  });
-  
-const roadProgram = getProgram(gl,roadVertexShader,roadFragmentShader);
-if(!roadProgram) throw new Error("getProgramError");
-
-const roadAttributes = new GlAttributes(gl,roadProgram);
-function drawRoad(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3, dy: number) {
-        
-    gl.useProgram(program);
-
-    gl.enableVertexAttribArray(attributes.a_vertex);
-    gl.enableVertexAttribArray(attributes.a_color);
-    gl.enableVertexAttribArray(attributes.a_texcoord);
-
-    var lights = [...lightLocation.getVec3ForBuffer(), 376, 157, 128, 626, 144, 127 ]
-    gl.uniform3fv(attributes.u_lightWorldPosition, lights);
-    gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
-    var lightColor = [...lightColorVector.getVec3ForBuffer(), 1,1,0, 1,1,0];
-    gl.uniform3fv(attributes.u_lightColor,lightColor);
-    gl.uniform1f(attributes.u_m,mirror)
-    gl.uniform1f(attributes.u_ks,ks);
-    gl.uniform1f(attributes.u_kd,kd);
-
-    var vertexBuffer = createStaticVertexBuffer(gl, triangleVertices);
-    var colorBuffer = createStaticVertexBuffer(gl, rgbTriangleColors);
-    var textureBuffer = createStaticVertexBuffer(gl, textureCoords);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
-
-    if(loadTexture) {
-
-        var tex = document.getElementById(textureID) as HTMLImageElement;
-        if(tex == null) throw new Error("imageError");
-        
-        var nmap = document.getElementById(normalMapID) as HTMLImageElement;
-        if(nmap == null) throw new Error("imageError");
-
-        bindTexture(gl, program, tex, nmap)
-    }
-
-    var modelMatrix = M4.scaling(1000,1000,1000);
-    var zRotationMatrix = M4.rotationZ(deg2rad(90));
-    var translationMatrix = M4.translation(1000,dy,0);
-    modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
-
-    var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-    gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
-
-    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
-}
-
 // ------------------------------------------------------------------------- Lights -------------------------------------------------------------------------
 
 const lightMesh = new CarLightModel(20,1);
 lightMesh.createSphereArrayBuffer(30,15);
-const lightBufferData: Float32Array = lightMesh.bufferData;
 
-var leftLight = getLeftLightData();
-var rightLight = getRightLightData();
+var rightHeadLight = new CarLight(new Vec3(376,157,128),new Vec3(118,186,0),new Vec3(24,15,43), new Vec3(255,255,0), lightMesh);
+var leftHeadLight = new CarLight(new Vec3(626,144,127),new Vec3(121,360,176),new Vec3(28,12,41), new Vec3(255,255,0), lightMesh);
+var rightRearLight = new CarLight(new Vec3(376,876,127),new Vec3(0,0,61),new Vec3(50,26,11), new Vec3(255,0,0), lightMesh); 
+var leftRearLight = new CarLight(new Vec3(626,876,127),new Vec3(0,0,298),new Vec3(50,26,11), new Vec3(255,0,0), lightMesh); 
+
+var carLights = [rightHeadLight,leftHeadLight,rightRearLight,leftRearLight];
 
 const drawLightProgram = getProgram(gl,lightsVertexShader,lightsFragmentShader);
 if(!drawLightProgram) throw new Error("getProgramError");
 
 const lightAttributes = new GlAttributes(gl,drawLightProgram);
+
+// ------------------------------------------------------------------------- Road -------------------------------------------------------------------------
+
+const roadObjUrl = 'resources/obj/road/rd.obj';
+var roadObjModel = new OBJParser();
+
+await fetch(roadObjUrl)
+  .then(response => response.text())
+  .then(objContent => {
+    roadObjModel.parse(objContent);
+  })
+  .catch(error => {
+    console.error('Error fetching the OBJ file:', error);
+  });
+ 
+var tex = document.getElementById(textureID) as HTMLImageElement;
+if(tex == null) throw new Error("imageError");
+
+var nmap = document.getElementById(normalMapID) as HTMLImageElement;
+if(nmap == null) throw new Error("imageError"); 
+
+var roadModel = new RoadModel(triangleVertices,textureCoords,mirror,ks,kd);
+var road = new Road(roadModel,lightLocation,carLights);
+
+const roadProgram = getProgram(gl,roadVertexShader,roadFragmentShader);
+if(!roadProgram) throw new Error("getProgramError");
+
+road.bind(gl,roadProgram,tex,nmap);
+const roadAttributes = new GlAttributes(gl,roadProgram);
 
 // ------------------------------------------------------------------------- Drawing -------------------------------------------------------------------------
 
@@ -743,14 +707,41 @@ function drawScene(now: number = 0, skip: boolean = false) {
     var cameraDirection: Vec3 = new Vec3(xCameraDirection,yCameraDirection,zCameraDirection);
     var cameraMatrix: M4 = getCameraMatrix(canvas, cameraPosition, cameraDirection);
 
+    //console.log('Camera position:', xCamera,yCamera,zCamera);
+    //console.log('Camera direction', xCameraDirection,yCameraDirection,zCameraDirection);
+
+    //console.log('Translation', Tx, Ty, Tz);
+    //console.log('Rotation', Rx, Ry, Rz);
+    //console.log('Scale', Sx, Sy, Sz);
+
     //drawBezier(gl, drawBezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
     drawCar(gl, drawCarProgram, carAttributes, cameraMatrix, cameraPosition);
-    drawRoad(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition,2000);
-    drawRoad(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition,1000);
-    drawRoad(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition,0);
-    drawRoad(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition,-1000);
-    drawLights(gl, drawLightProgram, lightAttributes, lightBufferData, rightLight.modelMatrix, cameraMatrix);
-    drawLights(gl, drawLightProgram, lightAttributes, lightBufferData, leftLight.modelMatrix, cameraMatrix);
+
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 0);
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 1000);
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, -1000);
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 2000);
+
+    // we are on the right track with this drawing, now we need to compress it so that draw car draws its lights as well
+    rightHeadLight.draw(gl, drawLightProgram, lightAttributes, cameraMatrix);
+    leftHeadLight.draw(gl, drawLightProgram, lightAttributes, cameraMatrix);
+    rightRearLight.draw(gl, drawLightProgram, lightAttributes, cameraMatrix);
+    leftRearLight.draw(gl, drawLightProgram, lightAttributes, cameraMatrix);
+
+    //leftRearLight.location.v1 = Tx;
+    //leftRearLight.location.v2 = Ty;
+    //leftRearLight.location.v3 = Tz;
+
+    //leftRearLight.rotation.v1 = Rx;
+    //leftRearLight.rotation.v2 = Ry;
+    //leftRearLight.rotation.v3 = Rz;
+
+    //leftRearLight.scale.v1 = Sx;
+    //leftRearLight.scale.v2 = Sy;
+    //leftRearLight.scale.v3 = Sz;
+    
+    
+    
     loadTexture = false;
 
     if(animation && !skip) {

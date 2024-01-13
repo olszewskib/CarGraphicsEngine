@@ -94,4 +94,8 @@ export class Vec3 {
     getVec3ForBuffer(): number[] {
         return new Array(this.v1,this.v2,this.v3);
     }
+
+    getVec3ForColorBuffer(): number[] {
+        return new Array(this.v1/255,this.v2/255,this.v3/255);
+    }
 }

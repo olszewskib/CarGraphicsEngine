@@ -14,69 +14,6 @@ export class CarLightModel {
         this.bufferData = new Float32Array([]);
     }
 
-
-    consturctSphere(rings:number, segments:number):void {
-
-        for (let latNumber = 0; latNumber <= rings / 2; latNumber++) { // Half the number of rings
-            const theta = latNumber * Math.PI / rings;
-            const sinTheta = Math.sin(theta);
-            const cosTheta = Math.cos(theta);
-        
-            for (let longNumber = 0; longNumber <= segments; longNumber++) {
-                const phi = longNumber * 2 * Math.PI / segments;
-                const sinPhi = Math.sin(phi);
-                const cosPhi = Math.cos(phi);
-        
-                const x = cosPhi * sinTheta;
-                const y = cosTheta;
-                const z = sinPhi * sinTheta;
-        
-                // Add vertices for upper hemisphere
-                this.vertices.push(this.radius * x);
-                this.vertices.push(this.radius * y);
-                this.vertices.push(this.radius * z);
-            }
-        }
-        
-        this.bufferData = new Float32Array(this.vertices);
-    }
-
-    construct():void {
-        var angle:number =  (360 / this.precision) * (Math.PI / 180);
-        var x  = 0;
-        var y = this.radius;
-
-        for(var i:number = 0; i < this.precision; i++) {
-            
-            var rot1 = angle * i;
-
-            var x1 = x * Math.cos(rot1) - y * Math.sin(rot1);
-            var y1 = y * Math.cos(rot1) + x * Math.sin(rot1);
-            
-            this.vertices.push(x1);
-            this.vertices.push(y1);
-            this.vertices.push(0);
-
-            this.vertices.push(0);
-            this.vertices.push(0);
-            this.vertices.push(this.height);
-
-            var rot2 = angle * (i + 1);
-
-            var x3 = x * Math.cos(rot2) - y * Math.sin(rot2);
-            var y3 = y * Math.cos(rot2) + x * Math.sin(rot2);
-
-            this.vertices.push(x3);
-            this.vertices.push(y3);
-            this.vertices.push(0);
-
-
-        }
-
-        this.bufferData = new Float32Array(this.vertices);
-    }
-
-
     createSphereArrayBuffer(segments: number, rings: number) {
         const vertexData = [];
     

@@ -2,9 +2,6 @@ import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
 import { Vec3 } from "../math/vec3";
 
-
-
-
 export function getCameraMatrix(canvas: HTMLCanvasElement, cameraPosition: Vec3, targetPosition: Vec3) : M4 {
 
     // This matrix converts a frustum of space into a clip space, so basicly it which part of space we can see 

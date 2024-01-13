@@ -59,7 +59,9 @@ export function setRenderingCanvas(gl: WebGL2RenderingContext, canvas: HTMLCanva
 }
 
 export function bindTexture(gl: WebGL2RenderingContext, program: WebGLProgram, tex: HTMLImageElement, nmap: HTMLImageElement): void {
-     
+    
+    gl.useProgram(program);
+
     // loading texture
      var texture = gl.createTexture();
      gl.bindTexture(gl.TEXTURE_2D,texture);
