@@ -369,130 +369,6 @@ canvas.addEventListener("keyup", function(event) { keys[event.key] = false; })
 export const gl = canvas.getContext('webgl2');
 if(!gl) throw new Error("webGL not supported");
 
-// ------------------------------------------------------------------------ Bezier Surface -------------------------------------------------------------------------
-
-const surfaceModel = new BezierSurfaceModel();
-
-var precision: number = 20;
-const surface = new BezierSurface(precision,surfaceModel);
-
-var triangleVertices = getVertices(surface);
-var triangleNormals = getNormals(surface);
-var triangleTangents = getTangents(surface);
-var rgbTriangleColors = getColors(surface,meshColorVector);
-var textureCoords = getTexture(surface);
-
-export const drawBezierProgram = getProgram(gl,bezierVertexShaderSourceCode,bezierFragmentShaderSourceCode);
-if(!drawBezierProgram) throw new Error("getProgramError");
-
-const bezierAttributes = new GlAttributes(gl,drawBezierProgram);
-
-function drawBezier(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
-    
-    gl.useProgram(program);
-
-    gl.enableVertexAttribArray(attributes.a_vertex);
-    gl.enableVertexAttribArray(attributes.a_color);
-    gl.enableVertexAttribArray(attributes.a_normal);
-    gl.enableVertexAttribArray(attributes.a_texcoord);
-    gl.enableVertexAttribArray(attributes.a_tangent);
-
-    gl.uniform3fv(attributes.u_lightWorldPosition, lightLocation.getVec3ForBuffer());
-    gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
-    gl.uniform3fv(attributes.u_lightColor,lightColorVector.getVec3ForBuffer());
-    gl.uniform1f(attributes.u_m,mirror)
-    gl.uniform1f(attributes.u_ks,ks);
-    gl.uniform1f(attributes.u_kd,kd);
-
-    gl.uniform1f(attributes.isNormalMapFSLocation,isNormalMap);
-    gl.uniform1f(attributes.isNormalMapVSLocation,isNormalMap);
-    gl.uniform1f(attributes.isTextureLocation,isTexture);
-
-    var triangleBuffer = createStaticVertexBuffer(gl, triangleVertices);
-    var rgbTriabgleBuffer = createStaticVertexBuffer(gl, rgbTriangleColors);
-    var normalsBuffer = createStaticVertexBuffer(gl, triangleNormals);
-    var tangentsBuffer = createStaticVertexBuffer(gl, triangleTangents);
-    var textureBuffer = createStaticVertexBuffer(gl, textureCoords);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
-    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, rgbTriabgleBuffer);
-    gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, tangentsBuffer);
-    gl.vertexAttribPointer(attributes.a_tangent, 3, gl.FLOAT, false, 0, 0);
-
-    // texture
-    if(loadTexture) {
-
-        // loading texture
-        var texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D,texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-        var image = document.getElementById(textureID) as HTMLImageElement;
-        if(image == null) {
-            throw new Error("imageError");
-        }
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-        // loading normal map
-        var normalTexture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D,normalTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 255]));
-
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-        var image = document.getElementById(normalMapID) as HTMLImageElement;
-        if(image == null) {
-            throw new Error("imageError");
-        }
-        gl.bindTexture(gl.TEXTURE_2D, normalTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-
-        // binding textures
-        var texLocation = gl.getUniformLocation(program,'tex');
-        var normaltexLocation = gl.getUniformLocation(program,'normalTex');
-
-        gl.uniform1i(texLocation, 0);
-        gl.uniform1i(normaltexLocation, 1);
-
-        gl.activeTexture(gl.TEXTURE0 + 0.0);
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.activeTexture(gl.TEXTURE1 + 0.0);
-        gl.bindTexture(gl.TEXTURE_2D, normalTexture);
-
-        loadTexture = false;
-    }
-
-    var modelMatrix = M4.scaling(1000,1000,1000);
-    var rotationMatrix = M4.rotationZ(deg2rad(90));
-    modelMatrix = M4.multiply(modelMatrix,rotationMatrix);
-
-    var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-
-    gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
-
-    gl.drawArrays(gl.TRIANGLES, 0, surface.triangles.length * 3);
-}
-
 // ------------------------------------------------------------------------- Lights -------------------------------------------------------------------------
 
 const lightMesh = new CarLightModel(20,1);
@@ -509,6 +385,34 @@ const drawLightProgram = getProgram(gl,lightsVertexShader,lightsFragmentShader);
 if(!drawLightProgram) throw new Error("getProgramError");
 
 const lightAttributes = new GlAttributes(gl,drawLightProgram);
+
+// ------------------------------------------------------------------------ Bezier Surface -------------------------------------------------------------------------
+
+const bezierProgram = getProgram(gl,bezierVertexShaderSourceCode,bezierFragmentShaderSourceCode);
+if(!bezierProgram) throw new Error("getProgramError");
+
+const surfaceModel = new BezierSurfaceModel();
+
+var bezierTexture = document.getElementById('pipes') as HTMLImageElement;
+if(bezierTexture == null) throw new Error("imageError");
+
+var bezierNormalMap = document.getElementById('pipesNormal') as HTMLImageElement;
+if(bezierNormalMap == null) throw new Error("imageError");
+
+var bezierTextures = createTexture(gl,bezierProgram,bezierTexture,bezierNormalMap);
+if(bezierTextures[0] == null || bezierTextures[1] == null) throw new Error("textureError");
+
+var precision: number = 20;
+const surface = new BezierSurface(precision,surfaceModel, lightLocation, carLights, bezierTextures[0], bezierTextures[1], mirror, ks, kd);
+
+var triangleVertices = getVertices(surface);
+var triangleNormals = getNormals(surface);
+var triangleTangents = getTangents(surface);
+var rgbTriangleColors = getColors(surface,meshColorVector);
+var textureCoords = getTexture(surface);
+
+
+const bezierAttributes = new GlAttributes(gl,bezierProgram);
 
 // ------------------------------------------------------------------------- Car -------------------------------------------------------------------------
 
@@ -709,7 +613,7 @@ function drawScene(now: number = 0, skip: boolean = false) {
     }
 
     if(!gl) throw new Error("webGL not supported");
-    if(!drawBezierProgram) throw new Error("getProgramError");
+    if(!bezierProgram) throw new Error("getProgramError");
     if(!carProgram) throw new Error("getProgramError");
     if(!roadProgram) throw new Error("getProgramError");
     if(!drawLightProgram) throw new Error("getProgramError");
@@ -745,6 +649,8 @@ function drawScene(now: number = 0, skip: boolean = false) {
 
     hangar.draw(gl, hangarProgram, hangarAttributes, cameraMatrix, cameraPosition);
     //drawHangar(gl, hangarProgram, hangarAttributes, cameraMatrix, cameraPosition);
+
+    surface.draw(gl, bezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
 
     //leftRearLight.location.v1 = Tx;
     //leftRearLight.location.v2 = Ty;

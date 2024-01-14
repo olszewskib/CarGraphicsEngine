@@ -2,6 +2,10 @@ import { Vec3 } from "../math/vec3";
 import { Vertex } from "./vertex";
 import { Triangle } from "./triangle";
 import { BezierSurfaceModel } from "./BezierSurfaceModel";
+import { GlAttributes, createStaticVertexBuffer } from "../../webGL";
+import { deg2rad } from "../math/angles";
+import { M4 } from "../math/m4";
+import { CarLight } from "../lights/carLight";
 
 export class BezierSurface {
     size: number;
@@ -9,11 +13,44 @@ export class BezierSurface {
     triangles: Triangle[];
     surface: BezierSurfaceModel;
 
-    constructor(precision: number, surface: BezierSurfaceModel) {
+    verticesBuffer: Float32Array;
+    normalsBuffer: Float32Array;
+    textureBuffer: Float32Array;
+    tangentsBuffer: Float32Array;
+    colorsBuffer: Uint8Array;
+    texture: WebGLTexture;
+    normalTexture: WebGLTexture;
+    mirror: number;
+    ks: number;
+    kd: number;
+
+    // TODO: waiting for refactor
+    mainLight: Vec3;
+    carLights: CarLight[];
+
+
+    constructor(precision: number, surface: BezierSurfaceModel, mainLight: Vec3, carLights: CarLight[], texture: WebGLTexture, normalTexture: WebGLTexture, mirror: number, ks: number, kd: number) {
         this.size = 1;
         this.precision = precision;
         this.triangles = [];
         this.surface = surface;
+
+        // buffers
+        this.verticesBuffer = new Float32Array();
+        this.normalsBuffer = new Float32Array();
+        this.textureBuffer = new Float32Array();
+        this.tangentsBuffer = new Float32Array();
+        this.colorsBuffer = new Uint8Array();
+        this.texture = texture;
+        this.normalTexture = normalTexture;
+        this.mirror = mirror;
+        this.ks = ks;
+        this.kd = kd;
+
+        // TODO: waiting for refactor
+        this.mainLight = mainLight;
+        this.carLights = carLights;
+
         this.construct(this.precision);
     }
 
@@ -81,6 +118,84 @@ export class BezierSurface {
                 this.triangles.push(tHigh);
             }
         }
+
+        this.verticesBuffer = getVertices(this);
+        this.normalsBuffer = getNormals(this);
+        this.textureBuffer = getTexture(this);
+        this.tangentsBuffer = getTangents(this);
+        this.colorsBuffer = getColors(this);
+    }
+
+    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
+    
+        gl.useProgram(program);
+    
+        gl.enableVertexAttribArray(attributes.a_vertex);
+        gl.enableVertexAttribArray(attributes.a_color);
+        gl.enableVertexAttribArray(attributes.a_normal);
+        gl.enableVertexAttribArray(attributes.a_texcoord);
+        gl.enableVertexAttribArray(attributes.a_tangent);
+
+        var lights = [...this.mainLight.getVec3ForBuffer()]
+        this.carLights.forEach(light => { 
+            lights.push(...light.location.getVec3ForBuffer());
+        });
+
+        var lightColors = [1,1,1];
+        this.carLights.forEach(light => { 
+            lightColors.push(...light.color.getVec3ForColorBuffer());
+        });
+    
+        gl.uniform3fv(attributes.u_lightWorldPosition, lights);
+        gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+        gl.uniform3fv(attributes.u_lightColor, lightColors);
+        gl.uniform1f(attributes.u_m,this.mirror)
+        gl.uniform1f(attributes.u_ks,this.ks);
+        gl.uniform1f(attributes.u_kd,this.kd);
+    
+        gl.uniform1f(attributes.isNormalMapFSLocation,1.0);
+        gl.uniform1f(attributes.isNormalMapVSLocation,1.0);
+        gl.uniform1f(attributes.isTextureLocation,1.0);
+
+        var triangleBuffer = createStaticVertexBuffer(gl, this.verticesBuffer);
+        var rgbTriabgleBuffer = createStaticVertexBuffer(gl, this.colorsBuffer);
+        var normalsBuffer = createStaticVertexBuffer(gl, this.normalsBuffer);
+        var tangentsBuffer = createStaticVertexBuffer(gl, this.tangentsBuffer);
+        var textureBuffer = createStaticVertexBuffer(gl, this.textureBuffer);
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer);
+        gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+        gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, rgbTriabgleBuffer);
+        gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
+        gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
+    
+        gl.bindBuffer(gl.ARRAY_BUFFER, tangentsBuffer);
+        gl.vertexAttribPointer(attributes.a_tangent, 3, gl.FLOAT, false, 0, 0);
+    
+        gl.uniform1i(attributes.u_texture, 0);
+        gl.uniform1i(attributes.u_normalTexture, 1);
+
+        gl.activeTexture(gl.TEXTURE0 + 0.0);
+        gl.bindTexture(gl.TEXTURE_2D, this.texture);
+        gl.activeTexture(gl.TEXTURE1 + 0.0);
+        gl.bindTexture(gl.TEXTURE_2D, this.normalTexture);
+    
+        var modelMatrix = M4.scaling(1000,1000,1000);
+        var rotationMatrix = M4.rotationZ(deg2rad(90));
+        modelMatrix = M4.multiply(modelMatrix,rotationMatrix);
+    
+        var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
+    
+        gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
+        gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
+    
+        gl.drawArrays(gl.TRIANGLES, 0, this.verticesBuffer.length / 3);
     }
 
     liftOuterEdge(height: number): void {
