@@ -20,6 +20,8 @@ import { RoadModel } from "./models/road/roadModel";
 import { Road } from "./models/road/road";
 import { CarModel } from "./models/car/carModel";
 import { Car } from "./models/car/car";
+import { Hangar } from "./models/hangar/hangar";
+import { HangarModel } from "./models/hangar/hangarModel";
 
 const precisionSlider = document.getElementById("precisionSlider") as HTMLInputElement;
 
@@ -579,6 +581,100 @@ var road = new Road(roadModel,lightLocation,carLights);
 
 const roadAttributes = new GlAttributes(gl,roadProgram);
 
+// ------------------------------------------------------------------------- hangar -------------------------------------------------------------------------
+
+const hangarObjUrl = 'resources/obj/hangar/hangar.obj';
+var hangarObjModel = new OBJParser();
+
+await fetch(hangarObjUrl)
+  .then(response => response.text())
+  .then(objContent => {
+    hangarObjModel.parse(objContent);
+  })
+  .catch(error => {
+    console.error('Error fetching the OBJ file:', error);
+  });
+
+const hangarProgram = getProgram(gl, carVertexShader,carFragmentShader);
+if(!hangarProgram) throw new Error("getProgramError");
+
+var hangarModel = new HangarModel(
+    hangarObjModel.verticesBuffer,
+    hangarObjModel.normalsBuffer,
+    hangarObjModel.textureBuffer,
+    carTextures[0],
+    carTextures[1],
+    mirror,
+    ks,
+    kd
+    );
+
+var hangar = new Hangar(hangarModel,lightLocation,carLights);
+
+const hangarAttributes = new GlAttributes(gl,hangarProgram);
+
+function drawHangar(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
+        
+    gl.useProgram(program);
+
+    gl.enableVertexAttribArray(attributes.a_vertex);
+    gl.enableVertexAttribArray(attributes.a_normal);
+    gl.enableVertexAttribArray(attributes.a_texcoord);
+
+    var lights = [...lightLocation.getVec3ForBuffer()]
+    carLights.forEach(light => { 
+        lights.push(...light.location.getVec3ForBuffer());
+    });
+
+    var lightColors = [1,1,1];
+    carLights.forEach(light => { 
+        lightColors.push(...light.color.getVec3ForColorBuffer());
+    });
+
+    gl.uniform3fv(attributes.u_lightWorldPosition, lights);
+    gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+    gl.uniform3fv(attributes.u_lightColor,lightColors);
+    gl.uniform1f(attributes.u_m, mirror);
+    gl.uniform1f(attributes.u_ks, ks);
+    gl.uniform1f(attributes.u_kd, kd);
+    gl.uniform1i(attributes.u_texture, 0);
+    gl.uniform1i(attributes.u_normalTexture, 1);
+
+    var vertexBuffer = createStaticVertexBuffer(gl, hangarModel.verticesBuffer);
+    var normalBuffer = createStaticVertexBuffer(gl, hangarModel.normalBuffer);
+    var textureBuffer = createStaticVertexBuffer(gl, hangarModel.textureBuffer);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
+    gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
+
+    gl.activeTexture(gl.TEXTURE0 + 0.0);
+    gl.bindTexture(gl.TEXTURE_2D, hangarModel.texture);
+    gl.activeTexture(gl.TEXTURE1 + 0.0);
+    gl.bindTexture(gl.TEXTURE_2D, hangarModel.normalTexture);
+
+    var modelMatrix = M4.scaling(Sx,Sx,Sx);
+    var xRotationMatrix = M4.rotationX(deg2rad(Rx));
+    var yRotationMatrix = M4.rotationY(deg2rad(Ry));
+    var zRotationMatrix = M4.rotationZ(deg2rad(Rz));
+    var translationMatrix = M4.translation(Tx,Ty,Tz);
+    modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
+    modelMatrix = M4.multiply(modelMatrix,yRotationMatrix);
+    modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
+    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
+
+    var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
+    gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
+    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
+
+    gl.drawArrays(gl.TRIANGLES, 0, hangarModel.verticesBuffer.length / 3);
+}
+
 // ------------------------------------------------------------------------- Drawing -------------------------------------------------------------------------
 
 function drawScene(now: number = 0, skip: boolean = false) {
@@ -617,6 +713,7 @@ function drawScene(now: number = 0, skip: boolean = false) {
     if(!carProgram) throw new Error("getProgramError");
     if(!roadProgram) throw new Error("getProgramError");
     if(!drawLightProgram) throw new Error("getProgramError");
+    if(!hangarProgram) throw new Error("getProgramError");
     
     // View port setup
     setRenderingCanvas(gl,canvas);
@@ -629,22 +726,25 @@ function drawScene(now: number = 0, skip: boolean = false) {
     //console.log('Camera position:', xCamera,yCamera,zCamera);
     //console.log('Camera direction', xCameraDirection,yCameraDirection,zCameraDirection);
 
-    //console.log('Translation', Tx, Ty, Tz);
-    //console.log('Rotation', Rx, Ry, Rz);
-    //console.log('Scale', Sx, Sy, Sz);
+    console.log('Translation', Tx, Ty, Tz);
+    console.log('Rotation', Rx, Ry, Rz);
+    console.log('Scale', Sx, Sy, Sz);
 
     //drawBezier(gl, drawBezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
     car.draw(gl, carProgram, carAttributes, cameraMatrix, cameraPosition);
 
-    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 0);
-    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 1000);
+    //road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 0);
+    //road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 1000);
     road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, -1000);
-    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 2000);
+    //road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 2000);
 
     // we are on the right track with this drawing, now we need to compress it so that draw car draws its lights as well
     carLights.forEach(light => { light.draw(gl, drawLightProgram, lightAttributes, cameraMatrix); });
 
-    car.move(M4.translation(0,Ty,0));
+    //car.move(M4.translation(0,Ty,0));
+
+    hangar.draw(gl, hangarProgram, hangarAttributes, cameraMatrix, cameraPosition);
+    //drawHangar(gl, hangarProgram, hangarAttributes, cameraMatrix, cameraPosition);
 
     //leftRearLight.location.v1 = Tx;
     //leftRearLight.location.v2 = Ty;

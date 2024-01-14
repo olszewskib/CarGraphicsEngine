@@ -30,11 +30,32 @@ export class OBJParser {
                         // Each part is like "vertex/texture/normal"
                         return part.split("/").map(numStr => parseInt(numStr) - 1); // OBJ indices are 1-based
                     });
-                    face.forEach(([v, t, n]) => {
-                        this.vertices.push(...this.cVertices[v].map(Number));
-                        this.textures.push(...this.cTextures[t].map(Number));
-                        this.normals.push(...this.cNormals[n].map(Number));
-                    });
+
+                    if (face.length == 4) {
+                        // If it's a quad, split it into two triangles
+                        const [v1, v2, v3, v4] = face;
+                
+                        // First triangle: v1, v2, v3
+                        [v1, v2, v3].forEach(([v, t, n]) => {
+                            this.vertices.push(...this.cVertices[v].map(Number));
+                            this.textures.push(...this.cTextures[t].map(Number));
+                            this.normals.push(...this.cNormals[n].map(Number));
+                        });
+                
+                        // Second triangle: v1, v3, v4
+                        [v1, v3, v4].forEach(([v, t, n]) => {
+                            this.vertices.push(...this.cVertices[v].map(Number));
+                            this.textures.push(...this.cTextures[t].map(Number));
+                            this.normals.push(...this.cNormals[n].map(Number));
+                        });
+                    } else {
+                        // It's a triangle
+                        face.forEach(([v, t, n]) => {
+                            this.vertices.push(...this.cVertices[v].map(Number));
+                            this.textures.push(...this.cTextures[t].map(Number));
+                            this.normals.push(...this.cNormals[n].map(Number));
+                        });
+                    }
 
                     this.faces.push(...face);
                     break;
