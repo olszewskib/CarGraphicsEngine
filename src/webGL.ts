@@ -116,6 +116,9 @@ export class GlAttributes {
     readonly u_kd: WebGLUniformLocation | null;
     readonly u_ks: WebGLUniformLocation | null; 
     readonly u_m: WebGLUniformLocation | null;
+    readonly u_kc: WebGLUniformLocation | null;
+    readonly u_kl: WebGLUniformLocation | null; 
+    readonly u_kq: WebGLUniformLocation | null;
     readonly u_texture: WebGLUniformLocation | null;
     readonly u_normalTexture: WebGLUniformLocation | null;
 
@@ -140,6 +143,9 @@ export class GlAttributes {
         this.u_kd = gl.getUniformLocation(program, 'u_kd');
         this.u_ks = gl.getUniformLocation(program, 'u_ks');
         this.u_m = gl.getUniformLocation(program, 'u_m');
+        this.u_kc = gl.getUniformLocation(program, 'u_kc');
+        this.u_kl = gl.getUniformLocation(program, 'u_kl');
+        this.u_kq = gl.getUniformLocation(program, 'u_kq');
         this.u_texture = gl.getUniformLocation(program, 'u_texture');
         this.u_normalTexture = gl.getUniformLocation(program, 'u_normalTexture');
     }

@@ -14,6 +14,10 @@ uniform float u_kd;
 uniform float u_ks;
 uniform float u_m;
 
+uniform float u_kc;
+uniform float u_kl;
+uniform float u_kq;
+
 out vec4 outputColor;
 
 void main () {
@@ -26,14 +30,19 @@ void main () {
   vec3 totalReflect = vec3(0.0);
 
   for(int i=0; i<NO_LIGHTS; i++) {
+    
+    float distance = length(surfaceToLight[i]);
+    float attenuation = 1.0 / (u_kc + u_kl * distance + (u_kq * distance * distance));
+    
     vec3 s2l = normalize(surfaceToLight[i]);
-    vec3 halfVector = normalize(s2l + surfaceToEye);
+    vec3 s2e = normalize(surfaceToEye);
+    vec3 halfVector = normalize(s2l + s2e);
 
     float light = max(dot(normal, s2l), 0.0);
     float reflect = pow(max(dot(normal, halfVector), 0.0), u_m);
 
-    totalLight += light * u_lightColor[i];
-    totalReflect += reflect * u_lightColor[i];
+    totalLight += light * u_lightColor[i] * attenuation;
+    totalReflect += reflect * u_lightColor[i] * attenuation;
   }
 
   outputColor = texture(u_texture,texCoord);

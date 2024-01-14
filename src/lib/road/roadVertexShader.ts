@@ -18,10 +18,10 @@ void main() {
   gl_Position = u_worldViewProjection * a_vertex;
 
   vec3 surfacePosition = (u_world * a_vertex).xyz;
-  surfaceToEye = normalize(u_eyePosition - surfacePosition);
+  surfaceToEye = u_eyePosition - surfacePosition;
 
   for(int i=0; i<NO_LIGHTS; i++) {
-    surfaceToLight[i] = normalize(u_lightWorldPosition[i] - surfacePosition);
+    surfaceToLight[i] = u_lightWorldPosition[i] - surfacePosition;
   }
 
   texCoord = a_texcoord;
