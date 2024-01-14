@@ -3,14 +3,16 @@ import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
 import { Vec3 } from "../math/vec3";
 import { CarLightModel } from "./carLightModel";
+import { ILight } from "./light";
 
-export class CarLight {
-    location: Vec3; // this is used to determine the location of the light in the world
-    scale: Vec3;
-    rotation: Vec3;
-    color: Vec3;
+export class CarLight implements ILight {
     model: CarLightModel;
     modelMatrix: M4;
+    location: Vec3; 
+    rotation: Vec3;
+    scale: Vec3;
+    color: Vec3;
+    intensity: number = 5;
 
     constructor(location: Vec3, rotation: Vec3, scale: Vec3, color: Vec3, model: CarLightModel) {
         this.location = new Vec3(location.v1,location.v2,location.v3);

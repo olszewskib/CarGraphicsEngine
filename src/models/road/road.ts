@@ -1,5 +1,6 @@
 import { GlAttributes, createStaticVertexBuffer } from "../../webGL";
 import { CarLight } from "../lights/carLight";
+import { ILight } from "../lights/light";
 import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
 import { Vec3 } from "../math/vec3";
@@ -8,13 +9,11 @@ import { RoadModel } from "./roadModel";
 export class Road {
     
     model: RoadModel;
-    readonly mainLight: Vec3;
-    readonly carLights: CarLight[];
+    readonly worldLights: ILight[];
 
-    constructor(model: RoadModel,mainLight: Vec3, lights: CarLight[]) {
+    constructor(model: RoadModel, worldLights: ILight[]) {
         this.model = model;
-        this.mainLight = mainLight;
-        this.carLights = lights;
+        this.worldLights = worldLights;
     }
 
     draw(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3, dy: number) {
@@ -24,14 +23,16 @@ export class Road {
         gl.enableVertexAttribArray(attributes.a_vertex);
         gl.enableVertexAttribArray(attributes.a_texcoord);
     
-        var lights = [...this.mainLight.getVec3ForBuffer()]
-        this.carLights.forEach(light => { 
+        var lights: number[] = []
+        this.worldLights.forEach(light => { 
             lights.push(...light.location.getVec3ForBuffer());
         });
 
-        var lightColors = [1,1,1];
-        this.carLights.forEach(light => { 
-            lightColors.push(...light.color.getVec3ForColorBuffer());
+        var lightColors: number[] = [];
+        this.worldLights.forEach(light => {
+            var color = light.color.getVec3ForColorBuffer();
+            color = color.map(color => color * light.intensity);
+            lightColors.push(...color);
         });
 
         gl.uniform3fv(attributes.u_lightWorldPosition, lights);
@@ -40,6 +41,9 @@ export class Road {
         gl.uniform1f(attributes.u_m, this.model.mirror);
         gl.uniform1f(attributes.u_ks, this.model.ks);
         gl.uniform1f(attributes.u_kd, this.model.kd);
+        gl.uniform1f(attributes.u_kc, 1.0);
+        gl.uniform1f(attributes.u_kl, 0.014);
+        gl.uniform1f(attributes.u_kq, 0.000007);
         gl.uniform1i(attributes.u_texture, 0);
         gl.uniform1i(attributes.u_normalTexture, 1);
     
