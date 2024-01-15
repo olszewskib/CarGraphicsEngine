@@ -37,15 +37,29 @@ export class CarLight implements ILight {
         this.modelMatrix = modelMatrix;
     }
 
-    move(transaltionMatrix: M4) {
-
-        this.modelMatrix = M4.multiply(this.modelMatrix,transaltionMatrix);
+    getPosition(): Vec3 {
         var x = this.modelMatrix.values[3][0];
         var y = this.modelMatrix.values[3][1];
         var z = this.modelMatrix.values[3][2];
         var w = this.modelMatrix.values[3][3];
-        this.location = new Vec3(x/w,y/w,z/w);
+        return new Vec3(x/w,y/w,z/w);
+    }
+
+    move(transaltionMatrix: M4) {
+
+        this.modelMatrix = M4.multiply(this.modelMatrix,transaltionMatrix);
+        this.location = this.getPosition();
         
+    }
+
+    rotate(deg: number) {
+        var translateToOrigin = M4.translation(-this.location.v1,-this.location.v2,-this.location.v3);
+        var rotate = M4.rotationZ(deg2rad(deg));
+        var translateBack = M4.translation(this.location.v1,this.location.v2,this.location.v3);
+        this.modelMatrix = M4.multiply(this.modelMatrix, translateToOrigin);
+        this.modelMatrix = M4.multiply(this.modelMatrix, rotate);
+        this.modelMatrix = M4.multiply(this.modelMatrix, translateBack);
+        this.location = this.getPosition();
     }
     
     draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4) {

@@ -60,10 +60,15 @@ export class BezierSurface {
     }
 
     private setInitialModelMatrix(): void {
-        var modelMatrix = M4.scaling(1000,1000,1000);
+        var modelMatrix = M4.scaling(1000,500,200);
         var rotationMatrix = M4.rotationX(deg2rad(90));
         modelMatrix = M4.multiply(modelMatrix,rotationMatrix);
         this.modelMatrix = modelMatrix;
+    }
+
+
+    move(transformationMatrix: M4): void {
+        this.modelMatrix = M4.multiply(this.modelMatrix,transformationMatrix);
     }
 
     construct(precision: number): void {
@@ -167,6 +172,8 @@ export class BezierSurface {
         gl.uniform1f(attributes.u_kc,1.0);
         gl.uniform1f(attributes.u_kl,0.09);
         gl.uniform1f(attributes.u_kq,0.032);
+        gl.uniform1i(attributes.u_texture, 0);
+        gl.uniform1i(attributes.u_normalTexture, 1);
 
         var triangleBuffer = createStaticVertexBuffer(gl, this.verticesBuffer);
         var rgbTriabgleBuffer = createStaticVertexBuffer(gl, this.colorsBuffer);
@@ -189,9 +196,6 @@ export class BezierSurface {
         gl.bindBuffer(gl.ARRAY_BUFFER, tangentsBuffer);
         gl.vertexAttribPointer(attributes.a_tangent, 3, gl.FLOAT, false, 0, 0);
     
-        gl.uniform1i(attributes.u_texture, 0);
-        gl.uniform1i(attributes.u_normalTexture, 1);
-
         gl.activeTexture(gl.TEXTURE0 + 0.0);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
         gl.activeTexture(gl.TEXTURE1 + 0.0);
@@ -206,20 +210,11 @@ export class BezierSurface {
         gl.drawArrays(gl.TRIANGLES, 0, this.verticesBuffer.length / 3);
     }
 
-    liftOuterEdge(height: number): void {
-        this.surface.setControlPointZValue(3,0,height);
-        this.surface.setControlPointZValue(3,1,height);
-        this.surface.setControlPointZValue(3,2,height);
-        this.surface.setControlPointZValue(3,3,height);
-        this.construct(this.precision);
-    }
-    
-    liftInnerEdge(height: number): void {
-        this.surface.setControlPointZValue(0,0,height);
-        this.surface.setControlPointZValue(0,1,height);
-        this.surface.setControlPointZValue(0,2,height);
-        this.surface.setControlPointZValue(0,3,height);
-        this.construct(this.precision);
+    liftEdge(index: number, height: number): void {
+        this.surface.setControlPointZValue(0,index,height);
+        this.surface.setControlPointZValue(1,index,height);
+        this.surface.setControlPointZValue(2,index,height);
+        this.surface.setControlPointZValue(3,index,height);
     }
 }
 

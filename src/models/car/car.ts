@@ -9,6 +9,8 @@ export class Car {
     
     model: CarModel;
     modelMatrix: M4;
+    currentPosition: Vec3 = new Vec3(0,0,0);
+    rotation: number = 0
     readonly mainLight: Vec3;
     readonly carLights: CarLight[];
 
@@ -30,13 +32,33 @@ export class Car {
         modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
         modelMatrix = M4.multiply(modelMatrix,translationMatrix);
         this.modelMatrix = modelMatrix;
+        this.currentPosition = new Vec3(500,500,115);
     }
 
     move(transformationMatrix: M4): void {
+        this.currentPosition.v1 += transformationMatrix.values[3][0];
+        this.currentPosition.v2 += transformationMatrix.values[3][1];
+        this.currentPosition.v3 += transformationMatrix.values[3][2];
         this.modelMatrix = M4.multiply(this.modelMatrix,transformationMatrix);
         this.carLights.forEach(light => { 
             light.move(transformationMatrix);
         });
+    }
+
+    rotate(deg: number) {
+        this.rotation += deg;
+        this.rotation = this.rotation % 360;
+
+        var cachedPosition = new Vec3(this.currentPosition.v1,this.currentPosition.v2,this.currentPosition.v3);
+        this.move(M4.translation(-this.currentPosition.v1,-this.currentPosition.v2,-this.currentPosition.v3));
+        this.move(M4.rotationZ(deg2rad(deg)));
+        this.move(M4.translation(cachedPosition.v1,cachedPosition.v2,cachedPosition.v3));
+    }
+
+    drive(distance: number) { 
+        var dx = Math.cos(deg2rad(this.rotation)) * distance;
+        var dy = Math.sin(deg2rad(this.rotation)) * distance;
+        this.move(M4.translation(dy,-dx,0));
     }
 
     draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {

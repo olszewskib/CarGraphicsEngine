@@ -1,7 +1,7 @@
 export const roadFragmentShader = `#version 300 es
 precision mediump float;
 
-#define NO_LIGHTS 5
+#define NO_LIGHTS 6
 
 in vec3 surfaceToLight[NO_LIGHTS];
 in vec3 surfaceToEye;

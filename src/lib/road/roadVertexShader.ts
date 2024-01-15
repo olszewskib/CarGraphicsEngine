@@ -1,6 +1,6 @@
 export const roadVertexShader = `#version 300 es
 
-#define NO_LIGHTS 5
+#define NO_LIGHTS 6
 
 in vec2 a_texcoord;
 in vec4 a_vertex;
