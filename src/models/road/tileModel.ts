@@ -1,4 +1,4 @@
-export class RoadModel {
+export class TileModel {
     verticesBuffer: Float32Array;
     textureBuffer: Float32Array;
     texture: WebGLTexture;

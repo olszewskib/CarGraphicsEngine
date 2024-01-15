@@ -14,11 +14,6 @@
         <tr>
           <td>
             <ul>
-              <h2>Precision</h2>
-              <li class="centered-range">
-                <input type="range" id="precisionSlider" min="4" max="60" step="1" value="60">
-            </ul>
-            <ul>
               <h2>Camera Position</h2>
               <li class="centered-range">
                 <h2>x:</h2>
@@ -46,13 +41,13 @@
               <h2>Light Location</h2>
               <li class="centered-range">
                 <h2>x:</h2>
-                <input type="range" id="xLightLocation" min="-5000" max="1500" value="300"></li>
+                <input type="range" id="xLightLocation" min="0" max="1000" value="0"></li>
               <li class="centered-range">
                 <h2>y:</h2>
-                <input type="range" id="yLightLocation" min="-5000" max="5000" value="2000"></li>
+                <input type="range" id="yLightLocation" min="0" max="1000" value="0"></li>
               <li class="centered-range">
                 <h2 margin="0">z:</h2>
-                <input type="range" id="zLightLocation" min="0" max="10000" value="1000"></li>
+                <input type="range" id="zLightLocation" min="0" max="10000" value="2"></li>
             </ul>
             <ul>
               <h2>Mods</h2>
@@ -94,7 +89,7 @@
               <h2>Scaling</h2>
               <li class="centered-range">
                 <h2>sx:</h2>
-                <input type="range" id="Sx" min="0" max="50" value="5" step="1"></li>
+                <input type="range" id="Sx" min="0" max="1000" value="1000" step="1"></li>
               <li class="centered-range">
                 <h2>sy:</h2>
                 <input type="range" id="Sy" min="0" max="50" value="0" step="1"></li>
@@ -140,61 +135,6 @@
                 <input type="range" id="zSlider" min="0" max="5" step="0.1" value="0" align="center"></li>
             </ul>
             <ul>
-              <h2>Colors</h2>
-              <li class="centered-range">
-                <h2>Light color: </h2>
-                <input type="color" id="u_lightColor" value="#FFFFFF"></li>
-              <li class="centered-range">
-                <h2>Mesh color: </h2>
-                <input type="color" id="meshColor" value="#4CAF50"></li>
-            </ul>
-            <ul>
-              <h2>Textures:</h2>
-              <li class="centered-range">
-                <h2>File:</h2>
-                <div class="dropdown"> 
-                  <button class="dropbtn"> 
-                      select 
-                  </button> 
-                  <div class="dropdown-content"> 
-                    <button id="floorTextureButton">
-                          <img src= "resources/textures/floor.png" width="100" height="100">
-                    </button>
-                    <button id="pipesTextureButton">
-                          <img src= "resources/textures/pipes.png" width="100" height="100"> 
-                    </button>
-                  </div> 
-                </div> 
-              </li>
-              <li class="centered-range">
-                <h2>Apply:</h2>
-                <input type="checkbox" id="applyTextureCheckBox" checked="true">
-              </li>
-            </ul>
-            <ul>
-              <h2>NormalMaps:</h2>
-              <li class="centered-range">
-                <h2>File:</h2>
-                <div class="dropdown"> 
-                  <button class="dropbtn"> 
-                      select 
-                  </button> 
-                  <div class="dropdown-content"> 
-                    <button id="floorNormalButton">
-                          <img src= "resources/normalMaps/floorNormal.png" width="100" height="100">
-                    </button>
-                    <button id="pipesNormalButton">
-                          <img src= "resources/normalMaps/pipesNormal.png" width="100" height="100"> 
-                    </button>
-                  </div> 
-                </div> 
-              </li>
-              <li class="centered-range">
-                <h2>Apply:</h2>
-                <input type="checkbox" id="applyNormalMapCheckBox" checked="true">
-              </li>
-            </ul>
-            <ul>
               <h2>Animation:</h2>
               <li class="centered-range">
                 <button id="startAnimation" class="dropbtn">start</button>
@@ -206,13 +146,15 @@
       </tbody>
     </table>
     
-    <img hidden id="floor" src="resources/textures/floor.png"></img>
-    <img hidden id="floorNormal" src="resources/normalMaps/floorNormal.png"></img>
-    <img hidden id="pipes" src="resources/textures/pipes.png"></img>
-    <img hidden id="pipesNormal" src="resources/normalMaps/pipesNormal.png"></img>
-    <img hidden id="road" src="resources/obj/road/rd.png"></img>
-    <img hidden id="roadNormal" src="resources/obj/road/rdn.png"></img>
-    <img hidden id="metal" src="resources/obj/porsche/textures/paintedMetal.jpg"></img>
+    <img hidden id="floor" src="resources/textures/floor.png">
+    <img hidden id="floorNormal" src="resources/normalMaps/floorNormal.png">
+    <img hidden id="pipes" src="resources/textures/pipes.png">
+    <img hidden id="pipesNormal" src="resources/normalMaps/pipesNormal.png">
+    <img hidden id="road" src="resources/obj/road/rd.png">
+    <img hidden id="roadNormal" src="resources/obj/road/rdn.png">
+    <img hidden id="metal" src="resources/obj/porsche/textures/paintedMetal.jpg">
+    <img hidden id="brick" src="resources/obj/wall/brick.png">
+    <img hidden id="brickNormal" src="resources/obj/wall/brickNormal.png">
 
 
   </body>

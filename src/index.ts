@@ -16,32 +16,21 @@ import { Vec3 } from "./models/math/vec3";
 import { OBJParser } from "./models/parser/objParser";
 import { M4 } from "./models/math/m4";
 import { CarLight } from "./models/lights/carLight";
-import { RoadModel } from "./models/road/roadModel";
-import { Road } from "./models/road/road";
+import { TileModel } from "./models/road/tileModel";
+import { Tile } from "./models/road/tile";
 import { CarModel } from "./models/car/carModel";
 import { Car } from "./models/car/car";
 import { Hangar } from "./models/hangar/hangar";
 import { HangarModel } from "./models/hangar/hangarModel";
+import { SceneLight } from "./models/lights/sceneLight";
 
-const precisionSlider = document.getElementById("precisionSlider") as HTMLInputElement;
 
 const zSlider = document.getElementById("zSlider") as HTMLInputElement;
 const xIndex = document.getElementById("xIndexInput") as HTMLInputElement;
 const yIndex = document.getElementById("yIndexInput") as HTMLInputElement;
 
-if(precisionSlider == null || zSlider == null)
+if(zSlider == null)
     throw new Error("slider not found");
-
-precisionSlider.addEventListener("input", function() {
-    precision = parseInt(precisionSlider.value,10);
-    surface.construct(precision);
-    triangleVertices = getVertices(surface);
-    triangleNormals = getNormals(surface);
-    triangleTangents = getTangents(surface);
-    rgbTriangleColors = getColors(surface,meshColorVector);
-    textureCoords = getTexture(surface);
-    drawScene(0,true);
-});
 
 zSlider.addEventListener("input", function() {
 
@@ -60,7 +49,7 @@ zSlider.addEventListener("input", function() {
     triangleVertices = getVertices(surface);
     triangleNormals = getNormals(surface);
     triangleTangents = getTangents(surface);
-    rgbTriangleColors = getColors(surface,meshColorVector);
+    rgbTriangleColors = getColors(surface);
     drawScene(0,true)
     
 })
@@ -165,84 +154,6 @@ mirrorSlider.addEventListener("input", function() {
     drawScene(0,true);
 })
 
-// Colors UI
-const lightColorPicker = document.getElementById("u_lightColor") as HTMLInputElement;
-const meshColorPicker = document.getElementById("meshColor") as HTMLInputElement;
-if(lightColorPicker == null || meshColorPicker == null) {
-    throw new Error("colorpicker");
-}
-
-var lightColorVector: Vec3 = Vec3.convertFromHEX(lightColorPicker.value,true);
-var meshColorVector: Vec3 = Vec3.convertFromHEX(meshColorPicker.value);
-
-lightColorPicker.addEventListener("input", function() {
-    lightColorVector = Vec3.convertFromHEX(lightColorPicker.value,true);
-    drawScene(0,true);
-})
-
-meshColorPicker.addEventListener("input", function() {
-    meshColorVector = Vec3.convertFromHEX(meshColorPicker.value);
-    rgbTriangleColors = getColors(surface,meshColorVector);
-    isTexture = 0.0;
-    drawScene(0,true);
-})
-
-// Textures UI
-var applyTextureCheckBox = document.getElementById("applyTextureCheckBox") as HTMLInputElement;
-var applyNormalMapCheckBox = document.getElementById("applyNormalMapCheckBox") as HTMLInputElement;
-if(applyNormalMapCheckBox == null || applyTextureCheckBox == null) {
-    throw new Error("applyCheckBoxes");
-}
-
-applyTextureCheckBox.addEventListener("input", function() {
-    if(applyTextureCheckBox.checked) {
-        isTexture = 1.0;
-    } else {
-        isTexture = 0.0;
-    }
-    drawScene(0,true);
-})
-
-applyNormalMapCheckBox.addEventListener("input", function() {
-    if(applyNormalMapCheckBox.checked) {
-        isNormalMap = 1.0;
-    } else {
-        isNormalMap = 0.0;
-    }
-    drawScene(0,true);
-})
-
-var floorTextureButton = document.getElementById("floorTextureButton") as HTMLButtonElement;
-var pipesTextureButton = document.getElementById("pipesTextureButton") as HTMLButtonElement;
-var floorNormalButton = document.getElementById("floorNormalButton") as HTMLButtonElement;
-var pipesNormalButton = document.getElementById("pipesNormalButton") as HTMLButtonElement;
-if(floorTextureButton == null || pipesTextureButton == null || floorNormalButton == null || pipesNormalButton == null) {
-    throw new Error("texturesError");
-}
-
-floorTextureButton.addEventListener("click", function() {
-    textureID = "floor";
-    loadTexture = true;
-    drawScene(0,true);
-})
-
-pipesTextureButton.addEventListener("click", function() {
-    textureID = "pipes";
-    loadTexture = true;
-    drawScene(0,true);
-})
-
-floorNormalButton.addEventListener("click", function() {
-    normalMapID = "floorNormal";
-    loadTexture = true;
-    drawScene(0,true);
-})
-
-pipesNormalButton.addEventListener("click", function() {
-    normalMapID = "pipesNormal";
-    loadTexture = true;
-    drawScene(0,true);
-})
 
 // animation ui
 var startAnimationButton = document.getElementById("startAnimation") as HTMLButtonElement;
@@ -336,7 +247,7 @@ szSlider.addEventListener("input", function() {
     drawScene(0,true);
 })
 
-// ------------------------------------------------------------------------- Flags ------------------------------------------------------------------------
+// ------------------------------------------------------------------------- Flags ---------------------------
 
 var lightLocation: Vec3 = new Vec3(xLightLocation,yLightLocation,zLightLocation);
 
@@ -355,7 +266,7 @@ var normalMapID: string = "roadNormal";
 var isTexture = 1.0;
 var isNormalMap = 1.0;
 
-// ------------------------------------------------------------------------ Canvas -------------------------------------------------------------------------
+// ------------------------------------------------------------------------ Canvas ----------------------------------------------
 
 const canvas = document.getElementById("mainCanvas") as HTMLCanvasElement;
 if(!canvas) throw new Error("Cant find canvas");
@@ -364,12 +275,14 @@ var keys: { [key: string]: boolean } = {};
 canvas.addEventListener("keydown", function(event) { keys[event.key] = true; })
 canvas.addEventListener("keyup", function(event) { keys[event.key] = false; })
 
-// ------------------------------------------------------------------------ GL -------------------------------------------------------------------------
+// ------------------------------------------------------------------------ GL -----------------------------------------
 
 export const gl = canvas.getContext('webgl2');
 if(!gl) throw new Error("webGL not supported");
 
-// ------------------------------------------------------------------------- Lights -------------------------------------------------------------------------
+// ------------------------------------------------------------------------- Lights ----------------------------------------------
+
+var sceneLight = new SceneLight(lightLocation, 10, new Vec3(255,255,255));
 
 const lightMesh = new CarLightModel(20,1);
 lightMesh.createSphereArrayBuffer(30,15);
@@ -380,13 +293,14 @@ var rightRearLight = new CarLight(new Vec3(376,876,127),new Vec3(0,0,61),new Vec
 var leftRearLight = new CarLight(new Vec3(626,876,127),new Vec3(0,0,298),new Vec3(50,26,11), new Vec3(255,0,0), lightMesh); 
 
 var carLights = [rightHeadLight,leftHeadLight,rightRearLight,leftRearLight];
+var worldLights = [...carLights, sceneLight];
 
 const drawLightProgram = getProgram(gl,lightsVertexShader,lightsFragmentShader);
 if(!drawLightProgram) throw new Error("getProgramError");
 
 const lightAttributes = new GlAttributes(gl,drawLightProgram);
 
-// ------------------------------------------------------------------------ Bezier Surface -------------------------------------------------------------------------
+// ------------------------------------------------------------------------ Bezier Surface -------------------------------
 
 const bezierProgram = getProgram(gl,bezierVertexShaderSourceCode,bezierFragmentShaderSourceCode);
 if(!bezierProgram) throw new Error("getProgramError");
@@ -403,18 +317,25 @@ var bezierTextures = createTexture(gl,bezierProgram,bezierTexture,bezierNormalMa
 if(bezierTextures[0] == null || bezierTextures[1] == null) throw new Error("textureError");
 
 var precision: number = 20;
-const surface = new BezierSurface(precision,surfaceModel, lightLocation, carLights, bezierTextures[0], bezierTextures[1], mirror, ks, kd);
+const surface = new BezierSurface(
+    precision,surfaceModel,
+    lightLocation, carLights,
+    bezierTextures[0],
+    bezierTextures[1], 
+    mirror, 
+    ks, 
+    kd);
 
 var triangleVertices = getVertices(surface);
 var triangleNormals = getNormals(surface);
 var triangleTangents = getTangents(surface);
-var rgbTriangleColors = getColors(surface,meshColorVector);
+var rgbTriangleColors = getColors(surface);
 var textureCoords = getTexture(surface);
 
 
 const bezierAttributes = new GlAttributes(gl,bezierProgram);
 
-// ------------------------------------------------------------------------- Car -------------------------------------------------------------------------
+// ------------------------------------------------------------------------- Car --------------------------------------
 
 const carObjUrl = 'resources/obj/porsche/Porsche_911_GT2.obj';
 var carObjModel = new OBJParser();
@@ -454,20 +375,8 @@ var car = new Car(carModel,lightLocation,carLights);
 
 const carAttributes = new GlAttributes(gl,carProgram);
 
-// ------------------------------------------------------------------------- Road -------------------------------------------------------------------------
+// ------------------------------------------------------------------------- Road --------------------------------
 
-const roadObjUrl = 'resources/obj/road/rd.obj';
-var roadObjModel = new OBJParser();
-
-await fetch(roadObjUrl)
-  .then(response => response.text())
-  .then(objContent => {
-    roadObjModel.parse(objContent);
-  })
-  .catch(error => {
-    console.error('Error fetching the OBJ file:', error);
-  });
- 
 const roadProgram = getProgram(gl,roadVertexShader,roadFragmentShader);
 if(!roadProgram) throw new Error("getProgramError");
 
@@ -480,12 +389,30 @@ if( roadNormalMap == null) throw new Error("imageError");
 var roadTextures = createTexture(gl,roadProgram, roadTexture, roadNormalMap);
 if(roadTextures[0] == null || roadTextures[1] == null) throw new Error("textureError");
 
-var roadModel = new RoadModel(triangleVertices,textureCoords,roadTextures[0],roadTextures[1],mirror,ks,kd);
-var road = new Road(roadModel,lightLocation,carLights);
+var roadModel = new TileModel(triangleVertices,textureCoords,roadTextures[0],roadTextures[1],mirror,ks,kd);
+var road = new Tile(roadModel, worldLights, M4.getInitMatirx(new Vec3(1000,0,0), new Vec3(0,0,90), new Vec3(1000,1000,1000)));
 
 const roadAttributes = new GlAttributes(gl,roadProgram);
 
-// ------------------------------------------------------------------------- hangar -------------------------------------------------------------------------
+// ------------------------------------------------------------------------- Walls --------------------------------
+
+var wallTexture = document.getElementById('brick') as HTMLImageElement;
+if( wallTexture == null) throw new Error("imageError");
+
+var wallNormalMap = document.getElementById('brickNormal') as HTMLImageElement;
+if( wallNormalMap == null) throw new Error("imageError");
+
+var wallTextures = createTexture(gl,roadProgram, wallTexture, wallNormalMap);
+if(wallTextures[0] == null || wallTextures[1] == null) throw new Error("textureError");
+
+var wallModel = new TileModel(triangleVertices,textureCoords,wallTextures[0],wallTextures[1],mirror,ks,kd);
+var backWall = new Tile(wallModel,worldLights, M4.getInitMatirx(new Vec3(0,1000,0), new Vec3(90,0,0), new Vec3(1000,1000,1000)));
+var leftWall = new Tile(wallModel,worldLights, M4.getInitMatirx(new Vec3(0,0,0), new Vec3(90,90,0), new Vec3(1000,1000,1000)));
+var rightWall = new Tile(wallModel,worldLights, M4.getInitMatirx(new Vec3(1000,1000,0), new Vec3(90,270,0), new Vec3(1000,1000,1000)));
+var topWall = new Tile(wallModel,worldLights, M4.getInitMatirx(new Vec3(0,1000,1000), new Vec3(180,0,0), new Vec3(1000,1000,1000)));
+
+
+// ------------------------------------------------------------------------- hangar ----------------
 
 const hangarObjUrl = 'resources/obj/hangar/hangar.obj';
 var hangarObjModel = new OBJParser();
@@ -517,51 +444,9 @@ var hangar = new Hangar(hangarModel,lightLocation,carLights);
 
 const hangarAttributes = new GlAttributes(gl,hangarProgram);
 
-function drawHangar(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
-        
-    gl.useProgram(program);
+// ------------------------------------------------------------------------- Drawing ------------------------
 
-    gl.enableVertexAttribArray(attributes.a_vertex);
-    gl.enableVertexAttribArray(attributes.a_normal);
-    gl.enableVertexAttribArray(attributes.a_texcoord);
-
-    var lights = [...lightLocation.getVec3ForBuffer()]
-    carLights.forEach(light => { 
-        lights.push(...light.location.getVec3ForBuffer());
-    });
-
-    var lightColors = [1,1,1];
-    carLights.forEach(light => { 
-        lightColors.push(...light.color.getVec3ForColorBuffer());
-    });
-
-    gl.uniform3fv(attributes.u_lightWorldPosition, lights);
-    gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
-    gl.uniform3fv(attributes.u_lightColor,lightColors);
-    gl.uniform1f(attributes.u_m, mirror);
-    gl.uniform1f(attributes.u_ks, ks);
-    gl.uniform1f(attributes.u_kd, kd);
-    gl.uniform1i(attributes.u_texture, 0);
-    gl.uniform1i(attributes.u_normalTexture, 1);
-
-    var vertexBuffer = createStaticVertexBuffer(gl, hangarModel.verticesBuffer);
-    var normalBuffer = createStaticVertexBuffer(gl, hangarModel.normalBuffer);
-    var textureBuffer = createStaticVertexBuffer(gl, hangarModel.textureBuffer);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.vertexAttribPointer(attributes.a_vertex, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-    gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-    gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
-
-    gl.activeTexture(gl.TEXTURE0 + 0.0);
-    gl.bindTexture(gl.TEXTURE_2D, hangarModel.texture);
-    gl.activeTexture(gl.TEXTURE1 + 0.0);
-    gl.bindTexture(gl.TEXTURE_2D, hangarModel.normalTexture);
-
+function getModelMatrix(): M4 {
     var modelMatrix = M4.scaling(Sx,Sx,Sx);
     var xRotationMatrix = M4.rotationX(deg2rad(Rx));
     var yRotationMatrix = M4.rotationY(deg2rad(Ry));
@@ -571,16 +456,9 @@ function drawHangar(gl: WebGL2RenderingContext, program: WebGLProgram, attribute
     modelMatrix = M4.multiply(modelMatrix,yRotationMatrix);
     modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
     modelMatrix = M4.multiply(modelMatrix,translationMatrix);
-
-    var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
-    gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
-    gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
-
-    gl.drawArrays(gl.TRIANGLES, 0, hangarModel.verticesBuffer.length / 3);
+    return modelMatrix;
 }
-
-// ------------------------------------------------------------------------- Drawing -------------------------------------------------------------------------
-
+var h = 0;
 function drawScene(now: number = 0, skip: boolean = false) {
 
     if(animation && !skip) {
@@ -595,19 +473,16 @@ function drawScene(now: number = 0, skip: boolean = false) {
             yCamera -= 10;
         }
         if(keys["ArrowRight"]) {
+            h+=0.1;
+            surface.liftOuterEdge(h);
 
-            triangleVertices = getVertices(surface);
-            triangleNormals = getNormals(surface);
-            triangleTangents = getTangents(surface);
-            rgbTriangleColors = getColors(surface,meshColorVector);
-            textureCoords = getTexture(surface);
         }
         if(keys["ArrowLeft"]) {
 
             triangleVertices = getVertices(surface);
             triangleNormals = getNormals(surface);
             triangleTangents = getTangents(surface);
-            rgbTriangleColors = getColors(surface,meshColorVector);
+            rgbTriangleColors = getColors(surface);
             textureCoords = getTexture(surface);
         }
     }
@@ -634,23 +509,32 @@ function drawScene(now: number = 0, skip: boolean = false) {
     console.log('Rotation', Rx, Ry, Rz);
     console.log('Scale', Sx, Sy, Sz);
 
-    //drawBezier(gl, drawBezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
     car.draw(gl, carProgram, carAttributes, cameraMatrix, cameraPosition);
 
     //road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 0);
-    //road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 1000);
-    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, -1000);
-    //road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, 2000);
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition);
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, [0,-1000,0]);
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, [0,-2000,0]);
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, [0,1000,0]);
+    road.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition, [0,2000,0]);
+
+    backWall.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition);
+    leftWall.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition);
+    rightWall.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition);
+    topWall.draw(gl, roadProgram, roadAttributes, cameraMatrix, cameraPosition);
+
 
     // we are on the right track with this drawing, now we need to compress it so that draw car draws its lights as well
     carLights.forEach(light => { light.draw(gl, drawLightProgram, lightAttributes, cameraMatrix); });
 
     //car.move(M4.translation(0,Ty,0));
 
-    hangar.draw(gl, hangarProgram, hangarAttributes, cameraMatrix, cameraPosition);
+
+    //hangar.draw(gl, hangarProgram, hangarAttributes, cameraMatrix, cameraPosition);
     //drawHangar(gl, hangarProgram, hangarAttributes, cameraMatrix, cameraPosition);
 
-    surface.draw(gl, bezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
+    //surface.modelMatrix = getModelMatrix();
+    //surface.draw(gl, bezierProgram, bezierAttributes, cameraMatrix, cameraPosition);
 
     //leftRearLight.location.v1 = Tx;
     //leftRearLight.location.v2 = Ty;

@@ -1,3 +1,4 @@
+import { deg2rad } from "./angles";
 import { Vec3 } from "./vec3";
 
 export class M4 {
@@ -12,6 +13,19 @@ export class M4 {
                 this.values[i][j] = 0;
             }
         }
+    }
+
+    static getInitMatirx(t: Vec3, r: Vec3, s: Vec3): M4 {
+        var modelMatrix = M4.scaling(s.v1,s.v2,s.v3);
+        var xRotationMatrix = M4.rotationX(deg2rad(r.v1));
+        var yRotationMatrix = M4.rotationY(deg2rad(r.v2));
+        var zRotationMatrix = M4.rotationZ(deg2rad(r.v3));
+        var translationMatrix = M4.translation(t.v1,t.v2,t.v3);
+        modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
+        modelMatrix = M4.multiply(modelMatrix,yRotationMatrix);
+        modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
+        modelMatrix = M4.multiply(modelMatrix,translationMatrix);
+        return modelMatrix;
     }
 
     static translation(dx: number,dy: number,dz: number): M4 {

@@ -4,19 +4,21 @@ import { ILight } from "../lights/light";
 import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
 import { Vec3 } from "../math/vec3";
-import { RoadModel } from "./roadModel";
+import { TileModel } from "./tileModel";
 
-export class Road {
+export class Tile {
     
-    model: RoadModel;
+    model: TileModel;
+    modelMatrix: M4;
     readonly worldLights: ILight[];
 
-    constructor(model: RoadModel, worldLights: ILight[]) {
+    constructor(model: TileModel, worldLights: ILight[], modelMatrix: M4) {
         this.model = model;
         this.worldLights = worldLights;
+        this.modelMatrix = modelMatrix;
     }
 
-    draw(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3, dy: number) {
+    draw(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3, t: number[] = [0,0,0]) {
         
         gl.useProgram(program);
     
@@ -61,11 +63,9 @@ export class Road {
         gl.activeTexture(gl.TEXTURE1 + 0.0);
         gl.bindTexture(gl.TEXTURE_2D, this.model.normalTexture);
 
-        var modelMatrix = M4.scaling(1000,1000,1000);
-        var zRotationMatrix = M4.rotationZ(deg2rad(90));
-        var translationMatrix = M4.translation(1000,dy,0);
-        modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
-        modelMatrix = M4.multiply(modelMatrix,translationMatrix);
+        var transaltionMatrix = M4.translation(t[0], t[1], t[2]);
+        var modelMatrix = M4.multiply(this.modelMatrix, transaltionMatrix);
+
     
         var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
         gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());

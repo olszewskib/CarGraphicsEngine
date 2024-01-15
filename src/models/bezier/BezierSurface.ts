@@ -24,6 +24,8 @@ export class BezierSurface {
     ks: number;
     kd: number;
 
+    modelMatrix: M4;
+
     // TODO: waiting for refactor
     mainLight: Vec3;
     carLights: CarLight[];
@@ -47,11 +49,21 @@ export class BezierSurface {
         this.ks = ks;
         this.kd = kd;
 
+        this.modelMatrix = new M4();
+
         // TODO: waiting for refactor
         this.mainLight = mainLight;
         this.carLights = carLights;
 
+        this.setInitialModelMatrix();
         this.construct(this.precision);
+    }
+
+    private setInitialModelMatrix(): void {
+        var modelMatrix = M4.scaling(1000,1000,1000);
+        var rotationMatrix = M4.rotationX(deg2rad(90));
+        modelMatrix = M4.multiply(modelMatrix,rotationMatrix);
+        this.modelMatrix = modelMatrix;
     }
 
     construct(precision: number): void {
@@ -152,10 +164,9 @@ export class BezierSurface {
         gl.uniform1f(attributes.u_m,this.mirror)
         gl.uniform1f(attributes.u_ks,this.ks);
         gl.uniform1f(attributes.u_kd,this.kd);
-    
-        gl.uniform1f(attributes.isNormalMapFSLocation,1.0);
-        gl.uniform1f(attributes.isNormalMapVSLocation,1.0);
-        gl.uniform1f(attributes.isTextureLocation,1.0);
+        gl.uniform1f(attributes.u_kc,1.0);
+        gl.uniform1f(attributes.u_kl,0.09);
+        gl.uniform1f(attributes.u_kq,0.032);
 
         var triangleBuffer = createStaticVertexBuffer(gl, this.verticesBuffer);
         var rgbTriabgleBuffer = createStaticVertexBuffer(gl, this.colorsBuffer);
@@ -186,13 +197,10 @@ export class BezierSurface {
         gl.activeTexture(gl.TEXTURE1 + 0.0);
         gl.bindTexture(gl.TEXTURE_2D, this.normalTexture);
     
-        var modelMatrix = M4.scaling(1000,1000,1000);
-        var rotationMatrix = M4.rotationZ(deg2rad(90));
-        modelMatrix = M4.multiply(modelMatrix,rotationMatrix);
     
-        var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
+        var worldViewProjectionMatrix = M4.multiply(this.modelMatrix,cameraMatrix);
     
-        gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
+        gl.uniformMatrix4fv(attributes.u_world, false, this.modelMatrix.convert());
         gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
     
         gl.drawArrays(gl.TRIANGLES, 0, this.verticesBuffer.length / 3);
