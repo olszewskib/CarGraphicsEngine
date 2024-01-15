@@ -1,4 +1,4 @@
-export class CarModel {
+export class ObjModel {
     verticesBuffer: Float32Array;
     normalsBuffer: Float32Array;
     textureBuffer: Float32Array;

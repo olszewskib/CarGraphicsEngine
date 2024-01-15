@@ -1,20 +1,20 @@
 import { GlAttributes, createStaticVertexBuffer } from "../../webGL";
 import { CarLight } from "../lights/carLight";
 import { Vec3 } from "../math/vec3";
-import { CarModel } from "./carModel";
+import { ObjModel } from "../objModel";
 import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
 
 export class Car {
     
-    model: CarModel;
+    model: ObjModel;
     modelMatrix: M4;
     currentPosition: Vec3 = new Vec3(0,0,0);
     rotation: number = 0
     readonly mainLight: Vec3;
     readonly carLights: CarLight[];
 
-    constructor(model: CarModel,mainLight: Vec3, lights: CarLight[]) {
+    constructor(model: ObjModel,mainLight: Vec3, lights: CarLight[]) {
         this.model = model;
         this.mainLight = mainLight;
         this.carLights = lights;

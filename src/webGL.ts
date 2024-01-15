@@ -1,5 +1,5 @@
 
-export function getProgram(gl: WebGL2RenderingContext, vertexShaderSourceCode: string, fragmentShaderSourceCode: string) {
+export function getProgram(gl: WebGL2RenderingContext, vertexShaderSourceCode: string, fragmentShaderSourceCode: string): WebGLProgram | null {
 
     const vertexShader = gl.createShader(gl.VERTEX_SHADER);
     if(!vertexShader) return null;
