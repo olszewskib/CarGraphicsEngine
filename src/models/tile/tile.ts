@@ -40,9 +40,11 @@ export class Tile {
         gl.uniform3fv(attributes.u_lightWorldPosition, lights);
         gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
         gl.uniform3fv(attributes.u_lightColor,lightColors);
-        gl.uniform1f(attributes.u_m, this.model.mirror);
-        gl.uniform1f(attributes.u_ks, this.model.ks);
-        gl.uniform1f(attributes.u_kd, this.model.kd);
+        gl.uniform1f(attributes.u_m, this.model.colorModel.m);
+        gl.uniform1f(attributes.u_ks, this.model.colorModel.ks);
+        gl.uniform1f(attributes.u_kd, this.model.colorModel.kd);
+        gl.uniform1f(attributes.u_fogAmount, this.model.colorModel.fogAmount);
+        gl.uniform1i(attributes.u_shadingMode, this.model.colorModel.shadingMode);
         gl.uniform1f(attributes.u_kc, 1.0);
         gl.uniform1f(attributes.u_kl, 0.014);
         gl.uniform1f(attributes.u_kq, 0.000007);

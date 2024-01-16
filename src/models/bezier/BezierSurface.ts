@@ -6,6 +6,8 @@ import { GlAttributes, createStaticVertexBuffer } from "../../webGL";
 import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
 import { CarLight } from "../lights/carLight";
+import { ILight } from "../lights/light";
+import { ColorModel } from "../colors/colorModel";
 
 export class BezierSurface {
     size: number;
@@ -20,18 +22,12 @@ export class BezierSurface {
     colorsBuffer: Uint8Array;
     texture: WebGLTexture;
     normalTexture: WebGLTexture;
-    mirror: number;
-    ks: number;
-    kd: number;
+    colorModel: ColorModel;
 
     modelMatrix: M4;
+    worldLights: ILight[];
 
-    // TODO: waiting for refactor
-    mainLight: Vec3;
-    carLights: CarLight[];
-
-
-    constructor(precision: number, surface: BezierSurfaceModel, mainLight: Vec3, carLights: CarLight[], texture: WebGLTexture, normalTexture: WebGLTexture, mirror: number, ks: number, kd: number) {
+    constructor(precision: number, surface: BezierSurfaceModel, worldLights: ILight[], texture: WebGLTexture, normalTexture: WebGLTexture, colorModel: ColorModel) {
         this.size = 1;
         this.precision = precision;
         this.triangles = [];
@@ -45,15 +41,11 @@ export class BezierSurface {
         this.colorsBuffer = new Uint8Array();
         this.texture = texture;
         this.normalTexture = normalTexture;
-        this.mirror = mirror;
-        this.ks = ks;
-        this.kd = kd;
+        this.colorModel = colorModel;
 
         this.modelMatrix = new M4();
 
-        // TODO: waiting for refactor
-        this.mainLight = mainLight;
-        this.carLights = carLights;
+        this.worldLights = worldLights;
 
         this.setInitialModelMatrix();
         this.construct(this.precision);
@@ -148,35 +140,41 @@ export class BezierSurface {
         gl.useProgram(program);
     
         gl.enableVertexAttribArray(attributes.a_vertex);
-        gl.enableVertexAttribArray(attributes.a_color);
         gl.enableVertexAttribArray(attributes.a_normal);
         gl.enableVertexAttribArray(attributes.a_texcoord);
         gl.enableVertexAttribArray(attributes.a_tangent);
 
-        var lights = [...this.mainLight.getVec3ForBuffer()]
-        this.carLights.forEach(light => { 
-            lights.push(...light.location.getVec3ForBuffer());
+        var lights: number[] = []
+        this.worldLights.forEach(light => { 
+            if(light.color.v1 == 255 && light.color.v2 == 255 && light.color.v3 == 255) {
+                lights.push(...light.location.getVec3ForBuffer());
+            }
         });
 
-        var lightColors = [1,1,1];
-        this.carLights.forEach(light => { 
-            lightColors.push(...light.color.getVec3ForColorBuffer());
+        var lightColors: number[] = [];
+        this.worldLights.forEach(light => {
+            if(light.color.v1 == 255 && light.color.v2 == 255 && light.color.v3 == 255) {
+                var color = light.color.getVec3ForColorBuffer();
+                color = color.map(color => color * light.intensity);
+                lightColors.push(...color);
+            }
         });
     
         gl.uniform3fv(attributes.u_lightWorldPosition, lights);
         gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
         gl.uniform3fv(attributes.u_lightColor, lightColors);
-        gl.uniform1f(attributes.u_m,this.mirror)
-        gl.uniform1f(attributes.u_ks,this.ks);
-        gl.uniform1f(attributes.u_kd,this.kd);
-        gl.uniform1f(attributes.u_kc,1.0);
-        gl.uniform1f(attributes.u_kl,0.09);
-        gl.uniform1f(attributes.u_kq,0.032);
+        gl.uniform1f(attributes.u_m, this.colorModel.m);
+        gl.uniform1f(attributes.u_ks, this.colorModel.ks);
+        gl.uniform1f(attributes.u_kd, this.colorModel.kd);
+        gl.uniform1f(attributes.u_fogAmount, this.colorModel.fogAmount);
+        gl.uniform1i(attributes.u_shadingMode, this.colorModel.shadingMode);
+        gl.uniform1f(attributes.u_kc, 1.0);
+        gl.uniform1f(attributes.u_kl, 0.014);
+        gl.uniform1f(attributes.u_kq, 0.000007);
         gl.uniform1i(attributes.u_texture, 0);
         gl.uniform1i(attributes.u_normalTexture, 1);
 
         var triangleBuffer = createStaticVertexBuffer(gl, this.verticesBuffer);
-        var rgbTriabgleBuffer = createStaticVertexBuffer(gl, this.colorsBuffer);
         var normalsBuffer = createStaticVertexBuffer(gl, this.normalsBuffer);
         var tangentsBuffer = createStaticVertexBuffer(gl, this.tangentsBuffer);
         var textureBuffer = createStaticVertexBuffer(gl, this.textureBuffer);
@@ -187,9 +185,6 @@ export class BezierSurface {
         gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
         gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
         
-        gl.bindBuffer(gl.ARRAY_BUFFER, rgbTriabgleBuffer);
-        gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
-    
         gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
         gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
     

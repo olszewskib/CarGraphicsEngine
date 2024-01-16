@@ -4,6 +4,7 @@ import { Vec3 } from "../math/vec3";
 import { ObjModel } from "../objModel";
 import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
+import { ILight } from "../lights/light";
 
 export class Car {
     
@@ -11,12 +12,12 @@ export class Car {
     modelMatrix: M4;
     currentPosition: Vec3 = new Vec3(0,0,0);
     rotation: number = 0
-    readonly mainLight: Vec3;
+    readonly worldLights: ILight[];
     readonly carLights: CarLight[];
 
-    constructor(model: ObjModel,mainLight: Vec3, lights: CarLight[]) {
+    constructor(model: ObjModel, worldLights: ILight[], lights: CarLight[]) {
         this.model = model;
-        this.mainLight = mainLight;
+        this.worldLights = worldLights;
         this.carLights = lights;
         this.modelMatrix = new M4();
         this.setInitialModelMatrix();
@@ -66,37 +67,35 @@ export class Car {
         gl.useProgram(program);
     
         gl.enableVertexAttribArray(attributes.a_vertex);
-        gl.enableVertexAttribArray(attributes.a_color);
         gl.enableVertexAttribArray(attributes.a_texcoord);
         gl.enableVertexAttribArray(attributes.a_normal);
 
-        var lights = [...this.mainLight.getVec3ForBuffer()]
-        this.carLights.forEach(light => { 
+        var lights: number[] = []
+        this.worldLights.forEach(light => { 
             lights.push(...light.location.getVec3ForBuffer());
         });
 
-        var lightColors = [1,1,1];
-        this.carLights.forEach(light => { 
-            lightColors.push(...light.color.getVec3ForColorBuffer());
+        var lightColors: number[] = [];
+        this.worldLights.forEach(light => {
+            var color = light.color.getVec3ForColorBuffer();
+            color = color.map(color => color * light.intensity);
+            lightColors.push(...color);
         });
     
         gl.uniform3fv(attributes.u_lightWorldPosition, lights);
         gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
         gl.uniform3fv(attributes.u_lightColor, lightColors);
-        gl.uniform1f(attributes.u_m, this.model.mirror);
-        gl.uniform1f(attributes.u_ks, this.model.ks);
-        gl.uniform1f(attributes.u_kd, this.model.kd);
-    
-        var color = [0,255,0];
-        var rgb = [];
-        for(var i = 0; i < this.model.verticesBuffer.length; i+=9) {
-            rgb.push(...color);
-            rgb.push(...color);
-            rgb.push(...color);
-        }
+        gl.uniform1f(attributes.u_m, this.model.colorModel.m);
+        gl.uniform1f(attributes.u_ks, this.model.colorModel.ks);
+        gl.uniform1f(attributes.u_kd, this.model.colorModel.kd);
+        gl.uniform1f(attributes.u_fogAmount, this.model.colorModel.fogAmount);
+        gl.uniform1f(attributes.u_kc, 1.0);
+        gl.uniform1f(attributes.u_kl, 0.014);
+        gl.uniform1f(attributes.u_kq, 0.000007);
+        gl.uniform1i(attributes.u_texture, 0);
+        gl.uniform1i(attributes.u_normalTexture, 1);
     
         var vertexBuffer = createStaticVertexBuffer(gl, this.model.verticesBuffer);
-        var colorBuffer = createStaticVertexBuffer(gl, new Uint8Array(rgb));
         var normalsBuffer = createStaticVertexBuffer(gl, this.model.normalsBuffer);
         var textureBuffer = createStaticVertexBuffer(gl, this.model.textureBuffer);
     
@@ -106,20 +105,13 @@ export class Car {
         gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
         gl.vertexAttribPointer(attributes.a_normal, 3, gl.FLOAT, false, 0, 0);
     
-        gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-        gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
-    
         gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
         gl.vertexAttribPointer(attributes.a_texcoord, 2, gl.FLOAT, false, 0, 0);
-    
-        gl.uniform1i(attributes.u_texture, 0);
-        gl.uniform1i(attributes.u_normalTexture, 1);
    
         gl.activeTexture(gl.TEXTURE0 + 0.0);
         gl.bindTexture(gl.TEXTURE_2D, this.model.texture);
         gl.activeTexture(gl.TEXTURE1 + 0.0);
         gl.bindTexture(gl.TEXTURE_2D, this.model.normalTexture);
-
     
         var worldViewProjectionMatrix = M4.multiply(this.modelMatrix,cameraMatrix);
         gl.uniformMatrix4fv(attributes.u_world, false, this.modelMatrix.convert());

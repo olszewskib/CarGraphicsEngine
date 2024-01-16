@@ -109,6 +109,7 @@ export class GlAttributes {
     readonly isNormalMapFSLocation: WebGLUniformLocation | null;
     readonly u_lightWorldPosition: WebGLUniformLocation | null;
     readonly isNormalMapVSLocation: WebGLUniformLocation | null;
+    readonly u_fogAmount: WebGLUniformLocation | null;
     readonly isTextureLocation: WebGLUniformLocation | null;
     readonly u_eyePosition: WebGLUniformLocation | null;
     readonly u_lightColor: WebGLUniformLocation | null;
@@ -119,6 +120,7 @@ export class GlAttributes {
     readonly u_kc: WebGLUniformLocation | null;
     readonly u_kl: WebGLUniformLocation | null; 
     readonly u_kq: WebGLUniformLocation | null;
+    readonly u_shadingMode: WebGLUniformLocation | null;
     readonly u_texture: WebGLUniformLocation | null;
     readonly u_normalTexture: WebGLUniformLocation | null;
 
@@ -136,11 +138,13 @@ export class GlAttributes {
         this.u_lightWorldPosition = gl.getUniformLocation(program, 'u_lightWorldPosition');
         this.isNormalMapFSLocation = gl.getUniformLocation(program, 'isNormalMapFS');
         this.isNormalMapVSLocation = gl.getUniformLocation(program, 'isNormalMapVS');
+        this.u_fogAmount = gl.getUniformLocation(program, 'u_fogAmount');
         this.u_eyePosition = gl.getUniformLocation(program, 'u_eyePosition');
         this.isTextureLocation = gl.getUniformLocation(program, 'isTexture');
         this.u_lightColor = gl.getUniformLocation(program, 'u_lightColor');
         this.u_world = gl.getUniformLocation(program, 'u_world');
         this.u_kd = gl.getUniformLocation(program, 'u_kd');
+        this.u_shadingMode = gl.getUniformLocation(program, 'u_shadingMode');
         this.u_ks = gl.getUniformLocation(program, 'u_ks');
         this.u_m = gl.getUniformLocation(program, 'u_m');
         this.u_kc = gl.getUniformLocation(program, 'u_kc');

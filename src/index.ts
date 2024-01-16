@@ -5,9 +5,9 @@ import { bezierVertexShaderSourceCode } from "./lib/bezier/vertexShader";
 import { lightsFragmentShader } from "./lib/lights/lightsFragmentShader";
 import { BezierSurfaceModel } from "./models/bezier/BezierSurfaceModel";
 import { lightsVertexShader } from "./lib/lights/lightsVertexShader";
-import { roadFragmentShader } from "./lib/road/roadFragmentShader";
+import { tileFragmentShader } from "./lib/tile/tileFragmentShader";
 import { carFragmentShader } from "./lib/car/carFragmentShader";
-import { roadVertexShader } from "./lib/road/roadVertexShader";
+import { tileVertexShader } from "./lib/tile/tileVertexShader";
 import { CarLightModel } from "./models/lights/carLightModel";
 import { carVertexShader } from "./lib/car/carVertexShader";
 import { getCameraMatrix } from "./models/camera/camera";
@@ -23,6 +23,7 @@ import { Car } from "./models/car/car";
 import { SceneLight } from "./models/lights/sceneLight";
 import { Textures } from "./textures";
 import { Lamp } from "./models/lamp/lamp";
+import { ColorModel } from "./models/colors/colorModel";
 
 const zSlider = document.getElementById("zSlider") as HTMLInputElement;
 const xIndex = document.getElementById("xIndexInput") as HTMLInputElement;
@@ -172,6 +173,39 @@ stopAnimationButton.addEventListener("click", function() {
     cancelAnimationFrame(animationID);
 })
 
+var dayButton = document.getElementById("day") as HTMLButtonElement;
+var nightButton = document.getElementById("night") as HTMLButtonElement;
+if(dayButton == null || nightButton == null) {
+    throw new Error("animationError");
+}
+
+var isNight: boolean = true;
+
+dayButton.addEventListener("click", function() {
+    sun.intensity = 450;
+    drawScene(0,true);
+})
+
+nightButton.addEventListener("click", function() {
+    sun.intensity = 0;
+    drawScene(0, true);
+})
+
+
+var fogOnButton = document.getElementById("fogOn") as HTMLButtonElement;
+var fogOffButton = document.getElementById("fogOff") as HTMLButtonElement;
+if(fogOnButton == null || fogOffButton == null) {
+    throw new Error("animationError");
+}
+
+fogOnButton.addEventListener("click", function() {
+    colorModel.isFog = true;
+})
+
+fogOffButton.addEventListener("click", function() {
+    colorModel.isFog = false;
+})
+
 // modeling
 
 var txSlider = document.getElementById("Tx") as HTMLInputElement;
@@ -279,6 +313,9 @@ var carNormalMap = roadNormalMap;
 
 console.log('Textures loaded');
 
+// ------------------------------------------------------------------------ ColorModel ----------------------------------------------
+var colorModel = new ColorModel(mirror,ks,kd);
+
 // ------------------------------------------------------------------------ Canvas ----------------------------------------------
 
 const canvas = document.getElementById("mainCanvas") as HTMLCanvasElement;
@@ -296,6 +333,7 @@ if(!gl) throw new Error("webGL not supported");
 // ------------------------------------------------------------------------- Lights ----------------------------------------------
 
 var sceneLight = new SceneLight(lightLocation, 10, new Vec3(255,255,255));
+var sun = new SceneLight(new Vec3(0,-2000,10000),0, new Vec3(255,255,255));
 
 const lightMesh = new CarLightModel(20,1);
 lightMesh.createSphereArrayBuffer(30,15);
@@ -306,7 +344,7 @@ var rightRearLight = new CarLight(new Vec3(376,876,127),new Vec3(0,0,61),new Vec
 var leftRearLight = new CarLight(new Vec3(626,876,127),new Vec3(0,0,298),new Vec3(50,26,11), new Vec3(255,0,0), lightMesh); 
 
 var carLights = [rightHeadLight,leftHeadLight,rightRearLight,leftRearLight];
-var worldLights = [...carLights, sceneLight] //, sceneLight2];
+var worldLights = [...carLights, sceneLight,sun];
 
 const drawLightProgram = getProgram(gl,lightsVertexShader,lightsFragmentShader);
 if(!drawLightProgram) throw new Error("getProgramError");
@@ -320,19 +358,17 @@ if(!bezierProgram) throw new Error("getProgramError");
 
 const surfaceModel = new BezierSurfaceModel();
 
-
 var bezierTextures = createTexture(gl,bezierProgram,bezierTexture,bezierNormalMap);
 if(bezierTextures[0] == null || bezierTextures[1] == null) throw new Error("textureError");
 
 var precision: number = 20;
 const surface = new BezierSurface(
     precision,surfaceModel,
-    lightLocation, carLights,
+    worldLights,
     bezierTextures[0],
     bezierTextures[1], 
-    mirror, 
-    ks, 
-    kd);
+    colorModel
+    );
 
 var triangleVertices = getVertices(surface);
 var triangleNormals = getNormals(surface);
@@ -370,12 +406,10 @@ var carModel = new ObjModel(carObjModel.verticesBuffer,
         carObjModel.textureBuffer,
         carTextures[0],
         carTextures[1],
-        mirror,
-        ks, 
-        kd
+        colorModel
     );
 
-var car = new Car(carModel,lightLocation,carLights);
+var car = new Car(carModel,worldLights,carLights);
 
 const carAttributes = new GlAttributes(gl,carProgram);
 
@@ -383,8 +417,7 @@ const carAttributes = new GlAttributes(gl,carProgram);
 const lampObjUrl = 'resources/obj/lamp/lamp.obj';
 var lampObjModel = new OBJParser();
 
-await fetch(lampObjUrl)
-    .then(response => response.text())
+await fetch(lampObjUrl).then(response => response.text())
     .then(objContent => {
         lampObjModel.parse(objContent);
     })
@@ -400,29 +433,25 @@ var lampModel = new ObjModel(lampObjModel.verticesBuffer,
         lampObjModel.textureBuffer,
         carTextures[0],
         carTextures[1],
-        mirror,
-        ks, 
-        kd
+        colorModel
     );
 
-var lamp1 = new Lamp(lampModel,worldLights, M4.getInitMatirx(new Vec3(-430, -785,0), new Vec3(90,270,0), new Vec3(200,200,200)),new Vec3(-430,-785,700),1,new Vec3(255,255,255));
-var lamp2 = new Lamp(lampModel,worldLights, M4.getInitMatirx(new Vec3(1460, -785,0), new Vec3(90,270,0), new Vec3(200,200,200)),new Vec3(1460,-785,700),1,new Vec3(255,255,255));
+var lamp1 = new Lamp(lampModel,worldLights, M4.getInitMatirx(new Vec3(-430, -785,0), new Vec3(90,270,0), new Vec3(200,200,200)),new Vec3(-430,-785,700),7,new Vec3(255,255,255));
+var lamp2 = new Lamp(lampModel,worldLights, M4.getInitMatirx(new Vec3(1460, -785,0), new Vec3(90,270,0), new Vec3(200,200,200)),new Vec3(1460,-785,700),7,new Vec3(255,255,255));
 var lampAttributes = new GlAttributes(gl,lampProgram);
-
-
 
 // ------------------------------------------------------------------------- Road --------------------------------
 
 const scale = 1000;
 
-const roadProgram = getProgram(gl,roadVertexShader,roadFragmentShader);
+const roadProgram = getProgram(gl,tileVertexShader,tileFragmentShader);
 if(!roadProgram) throw new Error("getProgramError");
 
 
 var roadTextures = createTexture(gl,roadProgram, roadTexture, roadNormalMap);
 if(roadTextures[0] == null || roadTextures[1] == null) throw new Error("textureError");
 
-var roadModel = new TileModel(triangleVertices,textureCoords,roadTextures[0],roadTextures[1],mirror,ks,kd);
+var roadModel = new TileModel(triangleVertices,textureCoords,roadTextures[0],roadTextures[1],colorModel);
 var road = new Tile(roadModel, worldLights, M4.getInitMatirx(new Vec3(0,- 2 * scale,0), new Vec3(0,0,0), new Vec3(1000,1000,1000)));
 
 const roadAttributes = new GlAttributes(gl,roadProgram);
@@ -433,7 +462,7 @@ const roadAttributes = new GlAttributes(gl,roadProgram);
 var wallTextures = createTexture(gl,roadProgram, wallTexture, wallNormalMap);
 if(wallTextures[0] == null || wallTextures[1] == null) throw new Error("textureError");
 
-var wallModel = new TileModel(triangleVertices,textureCoords,wallTextures[0],wallTextures[1],mirror,ks,kd);
+var wallModel = new TileModel(triangleVertices,textureCoords,wallTextures[0],wallTextures[1],colorModel);
 var backWall = new Tile(wallModel,worldLights, M4.getInitMatirx(new Vec3(0,1000,0), new Vec3(90,0,0), new Vec3(scale,scale/2,scale)));
 var leftWall = new Tile(wallModel,worldLights, M4.getInitMatirx(new Vec3(0,0,0), new Vec3(90,90,0), new Vec3(scale,scale/2,scale)));
 var rightWall = new Tile(wallModel,worldLights, M4.getInitMatirx(new Vec3(1000,1000,0), new Vec3(90,270,0), new Vec3(scale,scale/2,scale)));
@@ -447,7 +476,7 @@ var brickWalls = [backWall,leftWall,rightWall,topWall];
 var garageTextures = createTexture(gl,roadProgram, garageTexture, garageNormalMap);
 if(garageTextures[0] == null || garageTextures[1] == null) throw new Error("textureError");
 
-var garageModel = new TileModel(triangleVertices,textureCoords,garageTextures[0],garageTextures[1],mirror,ks,kd);
+var garageModel = new TileModel(triangleVertices,textureCoords,garageTextures[0],garageTextures[1],colorModel);
 var garageFloor = new Tile(garageModel,worldLights, M4.getInitMatirx(new Vec3(0,0,0), new Vec3(0,0,0), new Vec3(scale,scale,scale)));
 
 // Fasade
@@ -455,7 +484,7 @@ var garageFloor = new Tile(garageModel,worldLights, M4.getInitMatirx(new Vec3(0,
 var cityTextures = createTexture(gl,roadProgram, cityTexture, cityNormalMap);
 if(cityTextures[0] == null || cityTextures[1] == null) throw new Error("textureError");
 
-var cityModel = new TileModel(triangleVertices,textureCoords,cityTextures[0],cityTextures[1],mirror,ks,kd);
+var cityModel = new TileModel(triangleVertices,textureCoords,cityTextures[0],cityTextures[1],colorModel);
 var fasade = new Tile(cityModel,worldLights, M4.getInitMatirx(new Vec3(scale,0,scale + scale / 2), new Vec3(90,0,180), new Vec3(scale,scale,scale)));
 
 // Pavement
@@ -463,7 +492,7 @@ var fasade = new Tile(cityModel,worldLights, M4.getInitMatirx(new Vec3(scale,0,s
 var pavementTextures = createTexture(gl,roadProgram, pavementTexture, pavementNormalMap);
 if(pavementTextures[0] == null || pavementTextures[1] == null) throw new Error("textureError");
 
-var pavementModel = new TileModel(triangleVertices,textureCoords,pavementTextures[0],pavementTextures[1],mirror,ks,kd);
+var pavementModel = new TileModel(triangleVertices,textureCoords,pavementTextures[0],pavementTextures[1],colorModel);
 var pavement = new Tile(pavementModel,worldLights, M4.getInitMatirx(new Vec3(-scale/4,-scale/4,0), new Vec3(0,0,0), new Vec3(scale/4,scale/4,scale/4)));
 
 // Drivein
@@ -471,7 +500,7 @@ var pavement = new Tile(pavementModel,worldLights, M4.getInitMatirx(new Vec3(-sc
 var driveinTextures = createTexture(gl,roadProgram, driveinTexture, driveinNormalMap);
 if(driveinTextures[0] == null || driveinTextures[1] == null) throw new Error("textureError");
 
-var driveinModel = new TileModel(triangleVertices,textureCoords,driveinTextures[0],driveinTextures[1],mirror,ks,kd);
+var driveinModel = new TileModel(triangleVertices,textureCoords,driveinTextures[0],driveinTextures[1],colorModel);
 var drivein = new Tile(driveinModel,worldLights, M4.getInitMatirx(new Vec3(scale/2,-scale/4,0), new Vec3(0,0,90), new Vec3(scale/4,scale/4,scale/4)));
 
 // Grass
@@ -479,7 +508,7 @@ var drivein = new Tile(driveinModel,worldLights, M4.getInitMatirx(new Vec3(scale
 var grassTextures = createTexture(gl,roadProgram, grassTexture, grassNormalMap);
 if(grassTextures[0] == null || grassTextures[1] == null) throw new Error("textureError");
 
-var grassModel = new TileModel(triangleVertices,textureCoords,grassTextures[0],grassTextures[1],mirror,ks,kd);
+var grassModel = new TileModel(triangleVertices,textureCoords,grassTextures[0],grassTextures[1],colorModel);
 var grass = new Tile(grassModel,worldLights, M4.getInitMatirx(new Vec3(-scale/4,-scale/4,0), new Vec3(0,0,0), new Vec3(scale/4,scale/4,scale/4)));
 
 // ------------------------------------------------------------------------- Drawing ------------------------
@@ -506,6 +535,12 @@ function drawScene(now: number = 0, skip: boolean = false) {
         var delta = now-then;
         then = now;
         //lightLocation.rotate(deg2rad(rotationSpeed * delta),500,500);
+
+        if(colorModel.isFog && colorModel.fogAmount < 0.7) {
+            colorModel.fogAmount += 0.01;
+        } else if(!colorModel.isFog && colorModel.fogAmount > 0.0) {
+            colorModel.fogAmount -= 0.01;
+        }
 
         if(Math.abs(h2 - 1.2) > 0.0001) {
             if(Math.abs(h - 1.7) < 0.00001) {
@@ -556,12 +591,12 @@ function drawScene(now: number = 0, skip: boolean = false) {
     var cameraDirection: Vec3 = new Vec3(xCameraDirection,yCameraDirection,zCameraDirection);
     var cameraMatrix: M4 = getCameraMatrix(canvas, cameraPosition, cameraDirection);
 
-    console.log('Camera position:', xCamera,yCamera,zCamera);
-    console.log('Camera direction', xCameraDirection,yCameraDirection,zCameraDirection);
+    //console.log('Camera position:', xCamera,yCamera,zCamera);
+    //console.log('Camera direction', xCameraDirection,yCameraDirection,zCameraDirection);
 
-    console.log('Translation', Tx, Ty, Tz);
-    console.log('Rotation', Rx, Ry, Rz);
-    console.log('Scale', Sx, Sy, Sz);
+    //console.log('Translation', Tx, Ty, Tz);
+    //console.log('Rotation', Rx, Ry, Rz);
+    //console.log('Scale', Sx, Sy, Sz);
 
     car.draw(gl, carProgram, carAttributes, cameraMatrix, cameraPosition);
 
@@ -612,6 +647,7 @@ function drawScene(now: number = 0, skip: boolean = false) {
 
     lamp1.draw(gl, lampProgram, lampAttributes, cameraMatrix, cameraPosition);
     lamp2.draw(gl, lampProgram, lampAttributes, cameraMatrix, cameraPosition);
+
     
 
     if(animation && !skip) {

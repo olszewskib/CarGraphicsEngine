@@ -1,12 +1,12 @@
+import { ColorModel } from "./colors/colorModel";
+
 export class ObjModel {
     verticesBuffer: Float32Array;
     normalsBuffer: Float32Array;
     textureBuffer: Float32Array;
     texture: WebGLTexture;
     normalTexture: WebGLTexture;
-    mirror: number;
-    ks: number;
-    kd: number;
+    colorModel: ColorModel
 
     constructor(
         verticesBuffer: Float32Array,
@@ -14,17 +14,14 @@ export class ObjModel {
         textureBuffer: Float32Array,
         texture: WebGLTexture,
         normalTexture: WebGLTexture,
-        mirror: number,
-        ks: number,
-        kd: number) {
+        colorModel: ColorModel
+        ){
 
         this.verticesBuffer = verticesBuffer;
         this.normalsBuffer = normalsBuffer;
         this.textureBuffer = textureBuffer;
         this.texture = texture;
         this.normalTexture = normalTexture;
-        this.mirror = mirror;
-        this.ks = ks;
-        this.kd = kd;
+        this.colorModel = colorModel;
     }
 }

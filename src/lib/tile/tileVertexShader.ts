@@ -1,9 +1,9 @@
-export const roadVertexShader = `#version 300 es
+export const tileVertexShader = `#version 300 es
 
-#define NO_LIGHTS 6
+#define NO_LIGHTS 10
 
-in vec2 a_texcoord;
 in vec4 a_vertex;
+in vec2 a_texcoord;
 
 uniform vec3 u_lightWorldPosition[NO_LIGHTS];
 uniform mat4 u_worldViewProjection;
