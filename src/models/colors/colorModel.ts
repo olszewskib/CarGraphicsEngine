@@ -4,7 +4,7 @@ export class ColorModel {
     m: number;
     ks: number;
     kd: number;
-    shadingMode: number = 0;
+    shadingMode: number = 2;
 
     constructor(m: number, ks: number, kd: number) {
         this.m = m;
