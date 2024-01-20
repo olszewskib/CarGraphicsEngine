@@ -5,23 +5,28 @@ import { ObjModel } from "../objModel";
 import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
 import { ILight } from "../lights/light";
+import { Camera } from "../camera/camera";
+import { IRenderObject } from "../renderObject";
 
-export class Car {
+export class Car implements IRenderObject {
     
     model: ObjModel;
     modelMatrix: M4;
     currentPosition: Vec3 = new Vec3(0,0,0);
+    back: Vec3 = new Vec3(500,1000,350);
+    front: Vec3 = new Vec3(500,-200,100);
     rotation: number = 0
     readonly worldLights: ILight[];
     readonly carLights: CarLight[];
+    camera: Camera;
 
-    constructor(model: ObjModel, worldLights: ILight[], lights: CarLight[]) {
+    constructor(model: ObjModel, worldLights: ILight[], lights: CarLight[], camera: Camera) {
         this.model = model;
         this.worldLights = worldLights;
         this.carLights = lights;
+        this.camera = camera;
         this.modelMatrix = new M4();
         this.setInitialModelMatrix();
-
     }
 
     private setInitialModelMatrix() {
@@ -40,10 +45,15 @@ export class Car {
         this.currentPosition.v1 += transformationMatrix.values[3][0];
         this.currentPosition.v2 += transformationMatrix.values[3][1];
         this.currentPosition.v3 += transformationMatrix.values[3][2];
+        
         this.modelMatrix = M4.multiply(this.modelMatrix,transformationMatrix);
         this.carLights.forEach(light => { 
             light.move(transformationMatrix);
         });
+
+        this.back = this.carLights[2].getPosition();
+        this.back.v3 += 100;
+        this.front = this.carLights[1].getPosition();
     }
 
     rotate(deg: number) {
@@ -62,7 +72,7 @@ export class Car {
         this.move(M4.translation(dy,-dx,0));
     }
 
-    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
+    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes) {
         
         gl.useProgram(program);
     
@@ -83,7 +93,7 @@ export class Car {
         });
     
         gl.uniform3fv(attributes.u_lightWorldPosition, lights);
-        gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+        gl.uniform3fv(attributes.u_eyePosition,this.camera.position.getVec3ForBuffer());
         gl.uniform3fv(attributes.u_lightColor, lightColors);
         gl.uniform1f(attributes.u_m, this.model.colorModel.m);
         gl.uniform1f(attributes.u_ks, this.model.colorModel.ks);
@@ -113,7 +123,7 @@ export class Car {
         gl.activeTexture(gl.TEXTURE1 + 0.0);
         gl.bindTexture(gl.TEXTURE_2D, this.model.normalTexture);
     
-        var worldViewProjectionMatrix = M4.multiply(this.modelMatrix,cameraMatrix);
+        var worldViewProjectionMatrix = M4.multiply(this.modelMatrix,this.camera.matrix);
         gl.uniformMatrix4fv(attributes.u_world, false, this.modelMatrix.convert());
         gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
     

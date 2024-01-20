@@ -13,7 +13,7 @@ export class OBJParser {
     parse(objContent: string) {
         const lines = objContent.split("\n");
 
-        for (let line of lines) {
+        for (var line of lines) {
             const parts = line.trim().split(/\s+/);
             switch (parts[0]) {
                 case "v":

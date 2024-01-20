@@ -17,14 +17,14 @@ export class CarLightModel {
     createSphereArrayBuffer(segments: number, rings: number) {
         const vertexData = [];
     
-        for (let latNumber = 0; latNumber < rings; latNumber++) {
-            for (let longNumber = 0; longNumber < segments; longNumber++) {
+        for (var latNumber = 0; latNumber < rings; latNumber++) {
+            for (var longNumber = 0; longNumber < segments; longNumber++) {
                 const theta = [latNumber, latNumber + 1].map(val => val * Math.PI / rings);
                 const phi = [longNumber, longNumber + 1].map(val => val * 2 * Math.PI / segments);
     
                 const vertices = [];
-                for (let i = 0; i < 2; i++) {
-                    for (let j = 0; j < 2; j++) {
+                for (var i = 0; i < 2; i++) {
+                    for (var j = 0; j < 2; j++) {
                         const sinTheta = Math.sin(theta[i]);
                         const cosTheta = Math.cos(theta[i]);
     

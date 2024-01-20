@@ -50,8 +50,8 @@ export class BezierSurfaceModel {
     P(u: number, v: number): number {
         var result:number = 0;
 
-        for(let i:number = 0; i<=this.degree; i++) {
-            for(let j:number = 0; j<=this.degree; j++) {
+        for(var i:number = 0; i<=this.degree; i++) {
+            for(var j:number = 0; j<=this.degree; j++) {
                 result += BezierSurfaceModel.B(u,i) * BezierSurfaceModel.B(v,j) * this.controlPoints[i][j].z;
             }
         }
@@ -70,7 +70,7 @@ export class BezierSurfaceModel {
 
     static bezierCurve(points: Vec3[], t: number): Vec3 {
         var result:Vec3 = new Vec3();
-        for(let i:number = 0; i<4; i++) {
+        for(var i:number = 0; i<4; i++) {
             result.add(Vec3.scale(points[i],BezierSurfaceModel.B(t,i)));
         }
         return result;   
@@ -80,7 +80,7 @@ export class BezierSurfaceModel {
         var points: Vec3[] = [];
         var curve: Vec3[] = [];
 
-        for(let i:number = 0; i<=this.degree; i++) {
+        for(var i:number = 0; i<=this.degree; i++) {
             var v0:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[0][i]);
             var v1:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[1][i]);
             var v2:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[2][i]);
@@ -105,7 +105,7 @@ export class BezierSurfaceModel {
         var points: Vec3[] = [];
         var curve: Vec3[] = [];
 
-        for(let i:number = 0; i<=this.degree; i++) {
+        for(var i:number = 0; i<=this.degree; i++) {
             var v0:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[i][0]);
             var v1:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[i][1]);
             var v2:Vec3 = Vec3.convertFromPoint3D(this.controlPoints[i][2]);

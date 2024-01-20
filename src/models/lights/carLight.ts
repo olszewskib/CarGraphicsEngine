@@ -1,11 +1,13 @@
 import { GlAttributes, createStaticVertexBuffer } from "../../webGL";
+import { Camera } from "../camera/camera";
 import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
 import { Vec3 } from "../math/vec3";
+import { IRenderObject } from "../renderObject";
 import { CarLightModel } from "./carLightModel";
 import { ILight } from "./light";
 
-export class CarLight implements ILight {
+export class CarLight implements ILight, IRenderObject {
     model: CarLightModel;
     modelMatrix: M4;
     location: Vec3; 
@@ -13,13 +15,15 @@ export class CarLight implements ILight {
     scale: Vec3;
     color: Vec3;
     intensity: number = 5;
+    camera: Camera
 
-    constructor(location: Vec3, rotation: Vec3, scale: Vec3, color: Vec3, model: CarLightModel) {
+    constructor(location: Vec3, rotation: Vec3, scale: Vec3, color: Vec3, model: CarLightModel, camera: Camera) {
         this.location = new Vec3(location.v1,location.v2,location.v3);
         this.scale = new Vec3(scale.v1,scale.v2,scale.v3);
         this.rotation = new Vec3(rotation.v1,rotation.v2,rotation.v3);
         this.color = new Vec3(color.v1,color.v2,color.v3);
         this.model = model;
+        this.camera = camera;
         this.modelMatrix = new M4();
         this.setInitialModelMatrix();
     }
@@ -62,7 +66,7 @@ export class CarLight implements ILight {
         this.location = this.getPosition();
     }
     
-    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4) {
+    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes) {
     
     gl.useProgram(program);
 
@@ -85,7 +89,7 @@ export class CarLight implements ILight {
     gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
     gl.vertexAttribPointer(attributes.a_color, 3, gl.UNSIGNED_BYTE, true, 0, 0);
  
-    var worldViewProjectionMatrix = M4.multiply( this.modelMatrix ,cameraMatrix);
+    var worldViewProjectionMatrix = M4.multiply( this.modelMatrix , this.camera.matrix);
     gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
 
     gl.drawArrays(gl.TRIANGLES, 0, this.model.bufferData.length / 3);

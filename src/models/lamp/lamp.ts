@@ -4,8 +4,10 @@ import { Vec3 } from "../math/vec3";
 import { ObjModel } from "../objModel";
 import { M4 } from "../math/m4";
 import { ILight } from "../lights/light";
+import { Camera } from "../camera/camera";
+import { IRenderObject } from "../renderObject";
 
-export class Lamp implements ILight {
+export class Lamp implements ILight, IRenderObject {
     
     model: ObjModel;
     modelMatrix: M4;
@@ -13,18 +15,28 @@ export class Lamp implements ILight {
     intensity: number;
     color: Vec3;
     worldLights: ILight[];
+    camera: Camera
 
-    constructor(model: ObjModel, worldLights: ILight[], modelMatrix: M4, location: Vec3, intensity: number, color: Vec3) {
+    constructor(model: ObjModel, worldLights: ILight[], modelMatrix: M4, location: Vec3, intensity: number, color: Vec3, camera: Camera) {
         this.model = model;
         this.location = location;
         this.intensity = intensity;
         this.color = color;
         this.worldLights = worldLights;
         this.modelMatrix = modelMatrix
+        this.camera = camera;
         worldLights.push(this);
     }
+    
+    getPosition(): Vec3 {
+        var x = this.modelMatrix.values[3][0];
+        var y = this.modelMatrix.values[3][1];
+        var z = this.modelMatrix.values[3][2];
+        var w = this.modelMatrix.values[3][3];
+        return new Vec3(x/w,y/w,z/w);
+    }
 
-    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3, t: number[] = [0,0,0]) {
+    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, t: number[] = [0,0,0]) {
         
         gl.useProgram(program);
     
@@ -45,7 +57,7 @@ export class Lamp implements ILight {
         });
     
         gl.uniform3fv(attributes.u_lightWorldPosition, lights);
-        gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+        gl.uniform3fv(attributes.u_eyePosition,this.camera.position.getVec3ForBuffer());
         gl.uniform3fv(attributes.u_lightColor, lightColors);
         gl.uniform1f(attributes.u_m, this.model.colorModel.m);
         gl.uniform1f(attributes.u_ks, this.model.colorModel.ks);
@@ -82,7 +94,7 @@ export class Lamp implements ILight {
         var transaltionMatrix = M4.translation(t[0], t[1], t[2]);
         var modelMatrix = M4.multiply(this.modelMatrix, transaltionMatrix);
     
-        var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
+        var worldViewProjectionMatrix = M4.multiply(modelMatrix,this.camera.matrix);
         gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
         gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
     

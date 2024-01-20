@@ -8,8 +8,10 @@ import { M4 } from "../math/m4";
 import { CarLight } from "../lights/carLight";
 import { ILight } from "../lights/light";
 import { ColorModel } from "../colors/colorModel";
+import { Camera } from "../camera/camera";
+import { IRenderObject } from "../renderObject";
 
-export class BezierSurface {
+export class BezierSurface implements IRenderObject {
     size: number;
     precision: number;
     triangles: Triangle[];
@@ -26,8 +28,9 @@ export class BezierSurface {
 
     modelMatrix: M4;
     worldLights: ILight[];
+    camera: Camera;
 
-    constructor(precision: number, surface: BezierSurfaceModel, worldLights: ILight[], texture: WebGLTexture, normalTexture: WebGLTexture, colorModel: ColorModel) {
+    constructor(precision: number, surface: BezierSurfaceModel, worldLights: ILight[], texture: WebGLTexture, normalTexture: WebGLTexture, colorModel: ColorModel, camera: Camera) {
         this.size = 1;
         this.precision = precision;
         this.triangles = [];
@@ -43,9 +46,11 @@ export class BezierSurface {
         this.normalTexture = normalTexture;
         this.colorModel = colorModel;
 
+
         this.modelMatrix = new M4();
 
         this.worldLights = worldLights;
+        this.camera = camera;
 
         this.setInitialModelMatrix();
         this.construct(this.precision);
@@ -68,8 +73,8 @@ export class BezierSurface {
         this.precision = precision;
         var edgeLenght: number = this.size/this.precision;
 
-        for(let i=0; i<this.precision; i++) {
-            for(let j=0; j<this.precision; j++) {
+        for(var i=0; i<this.precision; i++) {
+            for(var j=0; j<this.precision; j++) {
 
                 // north west vertex
                 var nwX = edgeLenght * j;
@@ -135,7 +140,7 @@ export class BezierSurface {
         this.colorsBuffer = getColors(this);
     }
 
-    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3) {
+    draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes) {
     
         gl.useProgram(program);
     
@@ -161,7 +166,7 @@ export class BezierSurface {
         });
     
         gl.uniform3fv(attributes.u_lightWorldPosition, lights);
-        gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+        gl.uniform3fv(attributes.u_eyePosition,this.camera.position.getVec3ForBuffer());
         gl.uniform3fv(attributes.u_lightColor, lightColors);
         gl.uniform1f(attributes.u_m, this.colorModel.m);
         gl.uniform1f(attributes.u_ks, this.colorModel.ks);
@@ -197,7 +202,7 @@ export class BezierSurface {
         gl.bindTexture(gl.TEXTURE_2D, this.normalTexture);
     
     
-        var worldViewProjectionMatrix = M4.multiply(this.modelMatrix,cameraMatrix);
+        var worldViewProjectionMatrix = M4.multiply(this.modelMatrix,this.camera.matrix);
     
         gl.uniformMatrix4fv(attributes.u_world, false, this.modelMatrix.convert());
         gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
@@ -273,7 +278,7 @@ export function getBiTangents(mesh: BezierSurface): Float32Array {
 export function getColors(mesh: BezierSurface, color?: Vec3): Uint8Array {
     
     var colors: number[] = new Array();
-    for(let i:number = 0; i<mesh.triangles.length; i++) {
+    for(var i:number = 0; i<mesh.triangles.length; i++) {
 
         if(typeof color == 'undefined') {
             colors.push(255,0,0);

@@ -87,6 +87,22 @@ export class Vec3 {
         this.v3 += v.v3;
     }
 
+    static sum(v1: Vec3, v2: Vec3): Vec3 {
+        return new Vec3(
+            v1.v1 + v2.v1,
+            v1.v2 + v2.v2,
+            v1.v3 + v2.v3
+        );
+    }
+
+    static subtract(v1: Vec3, v2: Vec3): Vec3 {
+        return new Vec3(
+            v1.v1 - v2.v1,
+            v1.v2 - v2.v2,
+            v1.v3 - v2.v3
+        );
+    }
+
     lenght(): number {
         return Math.sqrt(this.v1 * this.v1 + this.v2 * this.v2 + this.v3 * this.v3);
     }

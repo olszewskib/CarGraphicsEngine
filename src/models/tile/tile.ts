@@ -1,24 +1,25 @@
 import { GlAttributes, createStaticVertexBuffer } from "../../webGL";
-import { CarLight } from "../lights/carLight";
+import { Camera } from "../camera/camera";
 import { ILight } from "../lights/light";
-import { deg2rad } from "../math/angles";
 import { M4 } from "../math/m4";
-import { Vec3 } from "../math/vec3";
+import { IRenderObject } from "../renderObject";
 import { TileModel } from "./tileModel";
 
-export class Tile {
+export class Tile implements IRenderObject {
     
     model: TileModel;
     modelMatrix: M4;
     readonly worldLights: ILight[];
+    camera: Camera;
 
-    constructor(model: TileModel, worldLights: ILight[], modelMatrix: M4) {
+    constructor(model: TileModel, worldLights: ILight[], modelMatrix: M4, camera: Camera) {
         this.model = model;
         this.worldLights = worldLights;
         this.modelMatrix = modelMatrix;
+        this.camera = camera;
     }
 
-    draw(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, cameraMatrix: M4, cameraPosition: Vec3, t: number[] = [0,0,0]) {
+    draw(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, t: number[] = [0,0,0]) {
         
         gl.useProgram(program);
     
@@ -38,7 +39,7 @@ export class Tile {
         });
 
         gl.uniform3fv(attributes.u_lightWorldPosition, lights);
-        gl.uniform3fv(attributes.u_eyePosition,cameraPosition.getVec3ForBuffer());
+        gl.uniform3fv(attributes.u_eyePosition,this.camera.position.getVec3ForBuffer());
         gl.uniform3fv(attributes.u_lightColor,lightColors);
         gl.uniform1f(attributes.u_m, this.model.colorModel.m);
         gl.uniform1f(attributes.u_ks, this.model.colorModel.ks);
@@ -69,7 +70,7 @@ export class Tile {
         var modelMatrix = M4.multiply(this.modelMatrix, transaltionMatrix);
 
     
-        var worldViewProjectionMatrix = M4.multiply(modelMatrix,cameraMatrix);
+        var worldViewProjectionMatrix = M4.multiply(modelMatrix, this.camera.matrix);
         gl.uniformMatrix4fv(attributes.u_world, false, modelMatrix.convert());
         gl.uniformMatrix4fv(attributes.u_worldViewProjection, false, worldViewProjectionMatrix.convert());
     
