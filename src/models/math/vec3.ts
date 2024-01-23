@@ -1,4 +1,6 @@
 import type { Point3D } from "src/models/bezier/BezierSurfaceModel";
+import { m4 } from "twgl.js";
+import { M4 } from "./m4";
 
 export class Vec3 {
     v1: number;
@@ -113,5 +115,21 @@ export class Vec3 {
 
     getVec3ForColorBuffer(): number[] {
         return new Array(this.v1/255,this.v2/255,this.v3/255);
+    }
+
+    multiply(mat: M4) {
+        var vec: number[] = [this.v1,this.v2,this.v3,1];
+        var result: number[] = [0,0,0,0];
+
+        for (let i = 0; i < 4; i++) {
+            for (let j = 0; j < 4; j++) {
+                result[i] += mat.values[i][j] * vec[j];
+            }
+        }
+
+        this.v1 = result[0] / result[3];
+        this.v2 = result[1] / result[3];
+        this.v3 = result[2] / result[3];
+        
     }
 }

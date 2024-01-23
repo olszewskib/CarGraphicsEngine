@@ -30,6 +30,7 @@ export class Camera {
     matrix: M4;
     width: number;
     height: number;
+    isGameCamera: boolean = false;
 
     constructor(position: Vec3, target: Vec3, width: number, height: number) {
         this.position = position;
@@ -62,28 +63,22 @@ export class Camera {
     }
 
     static (): void {
+        this.isGameCamera = false;
+        this.position = new Vec3(491,-2965,1212);
         this.upVector = new Vec3(0,1,0);
         this.target = new Vec3(491,45,345);
         this.updateMatrix();
     }
 
-    staticFollowCar(carPosition: Vec3, carRotation: number): void {
-        this.upVector = new Vec3(0,1,0);
-        this.position = new Vec3(491,-2965,3212);
-        this.target = carPosition;
-        this.updateMatrix();
-    }
-
     followCar(car: Car): void {
+        this.isGameCamera = false;
+        this.position = new Vec3(491,-2965,2212);
+
         // Create a quaternion from the car's rotation (yaw)
         var quaternion = Quaternion.fromEuler(0, deg2rad(car.rotation), 0);
 
-        // Calculate the direction vector from the camera to the car
-        var direction = Vec3.subtract(car.currentPosition, this.position);
-
         // Rotate the direction vector using the quaternion
-        // This makes the camera "look at" the car
-        this.target = Vec3.sum(this.position, quaternion.rotateVector(direction));
+        this.target = car.currentPosition;
 
         // Calculate the up vector based on the quaternion
         this.upVector = quaternion.rotateVector(new Vec3(0, 1, 0));
@@ -93,6 +88,7 @@ export class Camera {
     }
 
     gameCamera(car: Car) {
+        this.isGameCamera = true;
         this.upVector = new Vec3(0,-1,0);
         this.position = new Vec3(491,1000,400);
         this.target = new Vec3(491,-400,0);

@@ -28,7 +28,7 @@ export class CarLight implements ILight, IRenderObject {
         this.setInitialModelMatrix();
     }
 
-    private setInitialModelMatrix() {
+    setInitialModelMatrix() {
         var modelMatrix = M4.scaling(this.scale.v1,this.scale.v2,this.scale.v3);
         var xRotationMatrix = M4.rotationX(deg2rad(this.rotation.v1));
         var yRotationMatrix = M4.rotationY(deg2rad(this.rotation.v2));

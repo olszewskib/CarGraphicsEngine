@@ -30,31 +30,6 @@ const zSlider = document.getElementById("zSlider") as HTMLInputElement;
 const xIndex = document.getElementById("xIndexInput") as HTMLInputElement;
 const yIndex = document.getElementById("yIndexInput") as HTMLInputElement;
 
-if(zSlider == null)
-    throw new Error("slider not found");
-
-zSlider.addEventListener("input", function() {
-
-    surfaceModel.setControlPointZValue(parseInt(xIndex.value,10),parseInt(yIndex.value,10),parseFloat(zSlider.value));
-
-    var index = xIndex.value + yIndex.value;
-    const cell = document.getElementById(index);
-    if(cell) {
-        if(zSlider.value == "0") {
-            cell.textContent = "0.0";
-        } else {
-            cell.textContent = zSlider.value;
-        }
-    }
-    surface.construct(precision);
-    triangleVertices = getVertices(surface);
-    triangleNormals = getNormals(surface);
-    triangleTangents = getTangents(surface);
-    rgbTriangleColors = getColors(surface);
-    drawScene(0,true)
-    
-})
-
 //Camera position UI
 const xCameraSlider = document.getElementById("xCamera") as HTMLInputElement;
 const yCameraSlider = document.getElementById("yCamera") as HTMLInputElement;
@@ -192,6 +167,21 @@ nightButton.addEventListener("click", function() {
     drawScene(0, true);
 })
 
+var goruaudButton = document.getElementById("goruaud") as HTMLButtonElement;
+var phongButton = document.getElementById("phong") as HTMLButtonElement;
+if(goruaudButton == null || phongButton == null) {
+    throw new Error("animationError");
+}
+
+goruaudButton.addEventListener("click", function() {
+    colorModel.shadingMode = 1;
+    drawScene(0,true);
+})
+
+phongButton.addEventListener("click", function() {
+    colorModel.shadingMode = 2;
+    drawScene(0,true);
+})
 
 var fogOnButton = document.getElementById("fogOn") as HTMLButtonElement;
 var fogOffButton = document.getElementById("fogOff") as HTMLButtonElement;
@@ -205,6 +195,29 @@ fogOnButton.addEventListener("click", function() {
 
 fogOffButton.addEventListener("click", function() {
     colorModel.isFog = false;
+})
+
+var staticCameraButton = document.getElementById("static") as HTMLButtonElement;
+var followCameraButton = document.getElementById("follow") as HTMLButtonElement;
+var gameCameraButton = document.getElementById("game") as HTMLButtonElement;
+if(staticCameraButton == null || followCameraButton == null || gameCameraButton == null) {
+    throw new Error("cameraError");
+}
+
+var cameraMode: string = "static";
+staticCameraButton.addEventListener("click", function() {
+    cameraMode = "static";
+    drawScene(0,true);
+})
+
+followCameraButton.addEventListener("click", function() {
+    cameraMode = "follow";
+    drawScene(0,true);
+})
+
+gameCameraButton.addEventListener("click", function() {
+    cameraMode = "game";
+    drawScene(0,true);
 })
 
 // modeling
@@ -357,6 +370,7 @@ var rightRearLight = new CarLight(new Vec3(376,876,127),new Vec3(0,0,61),new Vec
 var leftRearLight = new CarLight(new Vec3(626,876,127),new Vec3(0,0,298),new Vec3(50,26,11), new Vec3(255,0,0), lightMesh, camera); 
 
 var carLights = [rightHeadLight,leftHeadLight,rightRearLight,leftRearLight];
+var staticLights = [sceneLight,sun];
 var worldLights = [...carLights, sceneLight,sun];
 
 const drawLightProgram = getProgram(gl,lightsVertexShader,lightsFragmentShader);
@@ -455,6 +469,8 @@ var lamp1 = new Lamp(lampModel,worldLights, M4.getInitMatirx(new Vec3(-430, -785
 var lamp2 = new Lamp(lampModel,worldLights, M4.getInitMatirx(new Vec3(1460, -785,0), new Vec3(90,270,0), new Vec3(200,200,200)),new Vec3(1460,-785,700),7,new Vec3(255,255,255),camera);
 objectToRender.push(lamp1);
 objectToRender.push(lamp2);
+staticLights.push(lamp1);
+staticLights.push(lamp2);
 
 // ------------------------------------------------------------------------- Road --------------------------------
 
@@ -571,13 +587,14 @@ function getModelMatrix(): M4 {
 }
 var h = 0;
 var h2 = 0;
+var loading = true;
 function drawScene(now: number = 0, skip: boolean = false) {
 
     if(animation && !skip) {
+        
         now *= 0.001;
         var delta = now-then;
         then = now;
-        //objectToRender.forEach(obj => { obj.modelMatrix = M4.multiply(obj.modelMatrix, M4.rotationZ(deg2rad((0.00001 * h++) % 360))); });
 
         if(colorModel.isFog && colorModel.fogAmount < 0.7) {
             colorModel.fogAmount += 0.01;
@@ -598,26 +615,38 @@ function drawScene(now: number = 0, skip: boolean = false) {
 
             }
             surface.move(M4.translation(0,0,(h + h2) * 10));
+        } else {
+            loading = false;
+            surface.cachedModelMatrix = surface.modelMatrix;
         }
 
-        if(keys["ArrowUp"]) {
-            yCamera += 10;
-            car.move(M4.translation(0,10,0));
-        }
         if(keys["ArrowDown"]) {
-            //car.drive(20);
-            var distance = 20;
-            var dx = Math.cos(deg2rad(car.rotation)) * distance;
-            var dy = Math.sin(deg2rad(car.rotation)) * distance;
-            objectToRender.forEach(obj => { obj.modelMatrix = M4.multiply(obj.modelMatrix, M4.translation(dy,dx,0)); });
+            //yCamera += 10;
+            //car.move(M4.translation(0,10,0));
+        }
+        if(keys["ArrowUp"]) {
+            if(camera.isGameCamera) {
+                var distance = 20;
+                var dx = Math.cos(deg2rad(car.rotation)) * distance;
+                var dy = Math.sin(deg2rad(car.rotation)) * distance;
+                objectToRender.forEach(obj => { obj.modelMatrix = M4.multiply(obj.modelMatrix, M4.translation(dy,dx,0)); });
+            } else {
+                car.drive(20);
+            }
         }
         if(keys["ArrowRight"]) {
-            //car.rotate(3);
-            objectToRender.forEach(obj => { obj.modelMatrix = M4.multiply(obj.modelMatrix, M4.rotationZ(deg2rad((3)))); });
+            if(camera.isGameCamera) {
+                objectToRender.forEach(obj => { obj.modelMatrix = M4.multiply(obj.modelMatrix, M4.rotationZ(deg2rad((3)))); });
+            } else {
+                car.rotate(3);
+            }
         }
         if(keys["ArrowLeft"]) {
-            objectToRender.forEach(obj => { obj.modelMatrix = M4.multiply(obj.modelMatrix, M4.rotationZ(deg2rad((-3)))); });
-            //car.rotate(-3);
+            if(camera.isGameCamera) {
+                objectToRender.forEach(obj => { obj.modelMatrix = M4.multiply(obj.modelMatrix, M4.rotationZ(deg2rad((-3)))); });
+            } else {
+                car.rotate(-3);
+            }
         }
     }
 
@@ -631,19 +660,20 @@ function drawScene(now: number = 0, skip: boolean = false) {
     // View port setup
     setRenderingCanvas(gl,canvas);
 
-    //console.log('Camera position:', xCamera,yCamera,zCamera);
-    //console.log('Camera direction', xCameraDirection,yCameraDirection,zCameraDirection);
-    //camera.position = new Vec3(xCamera,yCamera,zCamera);
-    //camera.target = new Vec3(xCameraDirection,yCameraDirection,zCameraDirection);
-    //camera.updateMatrix();
-    //camera.static();
-    //camera.followCar(car.currentPosition,car.rotation);
-    //camera.followCar(car);
-    camera.gameCamera(car);
-
-    //console.log('Translation', Tx, Ty, Tz);
-    //console.log('Rotation', Rx, Ry, Rz);
-    //console.log('Scale', Sx, Sy, Sz);
+    switch(cameraMode) {
+        case "static":
+            if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
+            camera.static();
+            break;
+        case "follow":
+            if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
+            camera.followCar(car);
+            break;
+        case "game":
+            if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
+            camera.gameCamera(car);
+            break;
+    }
 
     car.draw(gl, carProgram, carAttributes);
     carLights.forEach(light => { light.draw(gl, drawLightProgram, lightAttributes); });

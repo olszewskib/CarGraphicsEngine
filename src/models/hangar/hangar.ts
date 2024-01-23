@@ -20,7 +20,7 @@ export class Hangar{
         this.setInitialModelMatrix();
     }
 
-    private setInitialModelMatrix() {
+    setInitialModelMatrix() {
 
         var modelMatrix = M4.scaling(5,5,5);
         var rotationMatrix = M4.rotationX(deg2rad(90));

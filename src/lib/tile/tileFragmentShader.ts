@@ -43,6 +43,28 @@ void main () {
     outputColor = vec4(outputColor.rgb * totalLight, outputColor.a);
 
   } else if(u_shadingMode == GOURAUD_SHADING) {
+    
+    vec3 totalLight = vec3(0.0);
+    vec3 totalReflect = vec3(0.0);
+
+    for(int i=0; i<NO_LIGHTS; i++) {
+      
+      float distance = length(surfaceToLight[i]);
+      float attenuation = 1.0 / (u_kc + u_kl * distance + (u_kq * distance * distance));
+      
+      vec3 s2l = normalize(surfaceToLight[i]);
+      vec3 s2e = normalize(surfaceToEye);
+      vec3 halfVector = normalize(s2l + s2e);
+
+      float diffuse = max(dot(normal, s2l), 0.1);
+
+      totalLight += diffuse * u_lightColor[i] * attenuation;
+    }
+
+    outputColor = texture(u_texture,texCoord);
+    outputColor.rgb *= (totalLight);
+
+    outputColor = mix(outputColor, vec4(0.8,0.9,1.0,1.0), u_fogAmount);
   
   } else if(u_shadingMode == PHONG_SHADING) {
 

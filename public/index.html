@@ -41,10 +41,10 @@
               <h2>Light Location</h2>
               <li class="centered-range">
                 <h2>x:</h2>
-                <input type="range" id="xLightLocation" min="-1000" max="1000" value="0"></li>
+                <input type="range" id="xLightLocation" min="-1000" max="1000" value="500"></li>
               <li class="centered-range">
                 <h2>y:</h2>
-                <input type="range" id="yLightLocation" min="-2000" max="1000" value="0"></li>
+                <input type="range" id="yLightLocation" min="-2000" max="1000" value="500"></li>
               <li class="centered-range">
                 <h2 margin="0">z:</h2>
                 <input type="range" id="zLightLocation" min="0" max="10000" value="500"></li>
@@ -103,38 +103,6 @@
           </td>
           <td>
             <ul>
-              <h2>Control points</h2>
-              <li class="centered-range">
-                <div class="grid-container">
-                  <div id="03"class="grid-item">0.0</div>
-                  <div id="13"class="grid-item">0.0</div>
-                  <div id="23"class="grid-item">0.0</div>
-                  <div id="33"class="grid-item">0.0</div>
-                  <div id="02"class="grid-item">0.0</div>
-                  <div id="12"class="grid-item">0.0</div>
-                  <div id="22"class="grid-item">0.0</div>
-                  <div id="32"class="grid-item">0.0</div>
-                  <div id="01"class="grid-item">0.0</div>
-                  <div id="11"class="grid-item">0.0</div>
-                  <div id="21"class="grid-item">0.0</div>
-                  <div id="31"class="grid-item">0.0</div>
-                  <div id="00"class="grid-item">0.0</div>
-                  <div id="10"class="grid-item">0.0</div>
-                  <div id="20"class="grid-item">0.0</div>
-                  <div id="30"class="grid-item">0.0</div>
-                </div>
-              </li>
-              <li class="centered-range">
-                <h2>x: </h2>
-                <input id="xIndexInput" type="text" size="1" maxlength="1"></li>
-              <li class="centered-range">
-                <h2>y: </h2>
-                <input id="yIndexInput" type="text" size="1" maxlength="1"></li>
-              <li class="centered-range">
-                <h2>z: </h2>
-                <input type="range" id="zSlider" min="0" max="5" step="0.1" value="0"></li>
-            </ul>
-            <ul>
               <h2>Animation:</h2>
               <li class="centered-range">
                 <button id="startAnimation" class="dropbtn">start</button>
@@ -149,10 +117,25 @@
               </li>
             </ul>
             <ul>
+              <h2>Shading:</h2>
+              <li class="centered-range">
+                <button id="goruaud" class="dropbtn">Goruaud</button>
+                <button id="phong" class="dropbtn">Phong</button>
+              </li>
+            </ul>
+            <ul>
               <h2>Fog:</h2>
               <li class="centered-range">
                 <button id="fogOn" class="dropbtn">on</button>
                 <button id="fogOff" class="dropbtn">off</button>
+              </li>
+            </ul>
+            <ul>
+              <h2>Camera:</h2>
+              <li class="centered-range">
+                <button id="static" class="dropbtn">static</button>
+                <button id="follow" class="dropbtn">follow</button>
+                <button id="game" class="dropbtn">game</button>
               </li>
             </ul>
           </td>

@@ -8,6 +8,7 @@ import { TileModel } from "./tileModel";
 export class Tile implements IRenderObject {
     
     model: TileModel;
+    initialModelMatrix: M4;
     modelMatrix: M4;
     readonly worldLights: ILight[];
     camera: Camera;
@@ -17,6 +18,11 @@ export class Tile implements IRenderObject {
         this.worldLights = worldLights;
         this.modelMatrix = modelMatrix;
         this.camera = camera;
+        this.initialModelMatrix = modelMatrix;
+    }
+
+    setInitialModelMatrix() {
+        this.modelMatrix = this.initialModelMatrix;
     }
 
     draw(gl: WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, t: number[] = [0,0,0]) {

@@ -16,6 +16,7 @@ export class Lamp implements ILight, IRenderObject {
     color: Vec3;
     worldLights: ILight[];
     camera: Camera
+    cachedModelMatrix: M4;
 
     constructor(model: ObjModel, worldLights: ILight[], modelMatrix: M4, location: Vec3, intensity: number, color: Vec3, camera: Camera) {
         this.model = model;
@@ -25,6 +26,7 @@ export class Lamp implements ILight, IRenderObject {
         this.worldLights = worldLights;
         this.modelMatrix = modelMatrix
         this.camera = camera;
+        this.cachedModelMatrix = modelMatrix;
         worldLights.push(this);
     }
     
@@ -34,6 +36,10 @@ export class Lamp implements ILight, IRenderObject {
         var z = this.modelMatrix.values[3][2];
         var w = this.modelMatrix.values[3][3];
         return new Vec3(x/w,y/w,z/w);
+    }
+
+    setInitialModelMatrix(): void {
+        this.modelMatrix = this.cachedModelMatrix;
     }
 
     draw(gl:WebGL2RenderingContext, program: WebGLProgram, attributes: GlAttributes, t: number[] = [0,0,0]) {
@@ -63,6 +69,7 @@ export class Lamp implements ILight, IRenderObject {
         gl.uniform1f(attributes.u_ks, this.model.colorModel.ks);
         gl.uniform1f(attributes.u_kd, this.model.colorModel.kd);
         gl.uniform1f(attributes.u_fogAmount, this.model.colorModel.fogAmount);
+        gl.uniform1i(attributes.u_shadingMode, this.model.colorModel.shadingMode);
         gl.uniform1f(attributes.u_kc, 1.0);
         gl.uniform1f(attributes.u_kl, 0.014);
         gl.uniform1f(attributes.u_kq, 0.000007);

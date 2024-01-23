@@ -29,6 +29,7 @@ export class BezierSurface implements IRenderObject {
     modelMatrix: M4;
     worldLights: ILight[];
     camera: Camera;
+    cachedModelMatrix: M4;
 
     constructor(precision: number, surface: BezierSurfaceModel, worldLights: ILight[], texture: WebGLTexture, normalTexture: WebGLTexture, colorModel: ColorModel, camera: Camera) {
         this.size = 1;
@@ -48,19 +49,20 @@ export class BezierSurface implements IRenderObject {
 
 
         this.modelMatrix = new M4();
+        this.cachedModelMatrix = new M4();
 
         this.worldLights = worldLights;
         this.camera = camera;
 
-        this.setInitialModelMatrix();
-        this.construct(this.precision);
-    }
-
-    private setInitialModelMatrix(): void {
         var modelMatrix = M4.scaling(1000,500,200);
         var rotationMatrix = M4.rotationX(deg2rad(90));
         modelMatrix = M4.multiply(modelMatrix,rotationMatrix);
         this.modelMatrix = modelMatrix;
+        this.construct(this.precision);
+    }
+
+    setInitialModelMatrix(): void {
+        this.modelMatrix = this.cachedModelMatrix;
     }
 
 
@@ -172,7 +174,7 @@ export class BezierSurface implements IRenderObject {
         gl.uniform1f(attributes.u_ks, this.colorModel.ks);
         gl.uniform1f(attributes.u_kd, this.colorModel.kd);
         gl.uniform1f(attributes.u_fogAmount, this.colorModel.fogAmount);
-        gl.uniform1i(attributes.u_shadingMode, this.colorModel.shadingMode);
+        gl.uniform1i(attributes.u_shadingMode, 2);
         gl.uniform1f(attributes.u_kc, 1.0);
         gl.uniform1f(attributes.u_kl, 0.014);
         gl.uniform1f(attributes.u_kq, 0.000007);

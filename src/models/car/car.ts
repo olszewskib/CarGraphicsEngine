@@ -29,7 +29,7 @@ export class Car implements IRenderObject {
         this.setInitialModelMatrix();
     }
 
-    private setInitialModelMatrix() {
+     setInitialModelMatrix() {
         var modelMatrix = M4.scaling(200,200,200);
         var xRotationMatrix = M4.rotationX(deg2rad(90));
         var zRotationMatrix = M4.rotationZ(deg2rad(180));
@@ -99,6 +99,7 @@ export class Car implements IRenderObject {
         gl.uniform1f(attributes.u_ks, this.model.colorModel.ks);
         gl.uniform1f(attributes.u_kd, this.model.colorModel.kd);
         gl.uniform1f(attributes.u_fogAmount, this.model.colorModel.fogAmount);
+        gl.uniform1i(attributes.u_shadingMode, this.model.colorModel.shadingMode);
         gl.uniform1f(attributes.u_kc, 1.0);
         gl.uniform1f(attributes.u_kl, 0.014);
         gl.uniform1f(attributes.u_kq, 0.000007);
