@@ -10,7 +10,7 @@ import { carFragmentShader } from "./lib/car/carFragmentShader";
 import { tileVertexShader } from "./lib/tile/tileVertexShader";
 import { CarLightModel } from "./models/lights/carLightModel";
 import { carVertexShader } from "./lib/car/carVertexShader";
-import { Camera, getCameraMatrix } from "./models/camera/camera";
+import { Camera } from "./models/camera/camera";
 import { deg2rad } from "./models/math/angles";
 import { Vec3 } from "./models/math/vec3";
 import { OBJParser } from "./models/parser/objParser";
@@ -119,14 +119,17 @@ var mirror: number = parseInt(mirrorSlider.value,10);
 
 kdSlider.addEventListener("input", function() {
     kd = parseFloat(kdSlider.value);
+    colorModel.kd = kd;
     drawScene(0,true);
 })
 ksSlider.addEventListener("input", function() {
     ks = parseFloat(ksSlider.value);
+    colorModel.ks = ks;
     drawScene(0,true);
 })
 mirrorSlider.addEventListener("input", function() {
     mirror = parseInt(mirrorSlider.value,10);
+    colorModel.m = mirror;
     drawScene(0,true);
 })
 
@@ -217,80 +220,6 @@ followCameraButton.addEventListener("click", function() {
 
 gameCameraButton.addEventListener("click", function() {
     cameraMode = "game";
-    drawScene(0,true);
-})
-
-// modeling
-
-var txSlider = document.getElementById("Tx") as HTMLInputElement;
-var tySlider = document.getElementById("Ty") as HTMLInputElement;
-var tzSlider = document.getElementById("Tz") as HTMLInputElement;
-if(txSlider == null || tySlider == null || tzSlider == null) {
-    throw new Error("modelingError");
-}
-
-var Tx: number = parseInt(txSlider.value,10);
-var Ty: number = parseInt(tySlider.value,10);
-var Tz: number = parseInt(tzSlider.value,10);
-
-txSlider.addEventListener("input", function() {
-    Tx = parseInt(txSlider.value,10);
-    drawScene(0,true);
-})
-tySlider.addEventListener("input", function() {
-    Ty = parseInt(tySlider.value,10);
-    drawScene(0,true);
-})
-tzSlider.addEventListener("input", function() {
-    Tz = parseInt(tzSlider.value,10);
-    drawScene(0,true);
-})
-
-var rxSlider = document.getElementById("Rx") as HTMLInputElement;
-var rySlider = document.getElementById("Ry") as HTMLInputElement;
-var rzSlider = document.getElementById("Rz") as HTMLInputElement;
-if(rxSlider == null || rySlider == null || rzSlider == null) {
-    throw new Error("modelingError");
-}
-
-var Rx: number = parseInt(rxSlider.value,10);
-var Ry: number = parseInt(rySlider.value,10);
-var Rz: number = parseInt(rzSlider.value,10);
-
-rxSlider.addEventListener("input", function() {
-    Rx = parseInt(rxSlider.value,10);
-    drawScene(0,true);
-})
-rySlider.addEventListener("input", function() {
-    Ry = parseInt(rySlider.value,10);
-    drawScene(0,true);
-})
-rzSlider.addEventListener("input", function() {
-    Rz = parseInt(rzSlider.value,10);
-    drawScene(0,true);
-})
-
-var sxSlider = document.getElementById("Sx") as HTMLInputElement;
-var sySlider = document.getElementById("Sy") as HTMLInputElement;
-var szSlider = document.getElementById("Sz") as HTMLInputElement;
-if(sxSlider == null || sySlider == null || szSlider == null) {
-    throw new Error("modelingError");
-}
-
-var Sx: number = parseInt(sxSlider.value,10);
-var Sy: number = parseInt(sySlider.value,10);
-var Sz: number = parseInt(szSlider.value,10);
-
-sxSlider.addEventListener("input", function() {
-    Sx = parseInt(sxSlider.value,10);
-    drawScene(0,true);
-})
-sySlider.addEventListener("input", function() {
-    Sy = parseInt(sySlider.value,10);
-    drawScene(0,true);
-})
-szSlider.addEventListener("input", function() {
-    Sz = parseInt(szSlider.value,10);
     drawScene(0,true);
 })
 
@@ -573,18 +502,6 @@ objectToRender.push(...driveIn);
 
 // ------------------------------------------------------------------------- Drawing ------------------------
 
-function getModelMatrix(): M4 {
-    var modelMatrix = M4.scaling(Sx,Sx,Sx);
-    var xRotationMatrix = M4.rotationX(deg2rad(Rx));
-    var yRotationMatrix = M4.rotationY(deg2rad(Ry));
-    var zRotationMatrix = M4.rotationZ(deg2rad(Rz));
-    var translationMatrix = M4.translation(Tx,Ty,Tz);
-    modelMatrix = M4.multiply(modelMatrix,zRotationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,yRotationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
-    modelMatrix = M4.multiply(modelMatrix,translationMatrix);
-    return modelMatrix;
-}
 var h = 0;
 var h2 = 0;
 var loading = true;
