@@ -12,6 +12,7 @@ export class Car implements IRenderObject {
     
     model: ObjModel;
     modelMatrix: M4;
+    cachedModelMatrix: M4;
     currentPosition: Vec3 = new Vec3(0,0,0);
     back: Vec3 = new Vec3(500,1000,350);
     front: Vec3 = new Vec3(500,-200,100);
@@ -26,10 +27,6 @@ export class Car implements IRenderObject {
         this.carLights = lights;
         this.camera = camera;
         this.modelMatrix = new M4();
-        this.setInitialModelMatrix();
-    }
-
-     setInitialModelMatrix() {
         var modelMatrix = M4.scaling(200,200,200);
         var xRotationMatrix = M4.rotationX(deg2rad(90));
         var zRotationMatrix = M4.rotationZ(deg2rad(180));
@@ -39,6 +36,13 @@ export class Car implements IRenderObject {
         modelMatrix = M4.multiply(modelMatrix,translationMatrix);
         this.modelMatrix = modelMatrix;
         this.currentPosition = new Vec3(500,500,115);
+        this.cachedModelMatrix = modelMatrix;
+    }
+
+     setInitialModelMatrix() {
+        this.currentPosition = new Vec3(500,500,115);
+        this.rotation = 0;
+        this.modelMatrix = this.cachedModelMatrix;
     }
 
     move(transformationMatrix: M4): void {

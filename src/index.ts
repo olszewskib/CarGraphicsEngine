@@ -210,16 +210,25 @@ if(staticCameraButton == null || followCameraButton == null || gameCameraButton 
 var cameraMode: string = "static";
 staticCameraButton.addEventListener("click", function() {
     cameraMode = "static";
+    if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
+    if (!loading) car.setInitialModelMatrix();
+    if (!loading) car.carLights.forEach(light => { light.setInitialModelMatrix(); });
     drawScene(0,true);
 })
 
 followCameraButton.addEventListener("click", function() {
     cameraMode = "follow";
+    if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
+    if (!loading) car.setInitialModelMatrix();
+    if (!loading) car.carLights.forEach(light => { light.setInitialModelMatrix(); });
     drawScene(0,true);
 })
 
 gameCameraButton.addEventListener("click", function() {
     cameraMode = "game";
+    if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
+    if (!loading) car.setInitialModelMatrix();
+    if (!loading) car.carLights.forEach(light => { light.setInitialModelMatrix(); });
     drawScene(0,true);
 })
 
@@ -532,9 +541,9 @@ function drawScene(now: number = 0, skip: boolean = false) {
 
             }
             surface.move(M4.translation(0,0,(h + h2) * 10));
+            surface.cachedModelMatrix = surface.modelMatrix;
         } else {
             loading = false;
-            surface.cachedModelMatrix = surface.modelMatrix;
         }
 
         if(keys["ArrowDown"]) {
@@ -579,15 +588,12 @@ function drawScene(now: number = 0, skip: boolean = false) {
 
     switch(cameraMode) {
         case "static":
-            if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
             camera.static();
             break;
         case "follow":
-            if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
             camera.followCar(car);
             break;
         case "game":
-            if(!loading) objectToRender.forEach(obj => { obj.setInitialModelMatrix(); })
             camera.gameCamera(car);
             break;
     }

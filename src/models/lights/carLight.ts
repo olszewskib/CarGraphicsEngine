@@ -10,6 +10,7 @@ import { ILight } from "./light";
 export class CarLight implements ILight, IRenderObject {
     model: CarLightModel;
     modelMatrix: M4;
+    cahcedModelMatrix: M4;
     location: Vec3; 
     rotation: Vec3;
     scale: Vec3;
@@ -25,10 +26,6 @@ export class CarLight implements ILight, IRenderObject {
         this.model = model;
         this.camera = camera;
         this.modelMatrix = new M4();
-        this.setInitialModelMatrix();
-    }
-
-    setInitialModelMatrix() {
         var modelMatrix = M4.scaling(this.scale.v1,this.scale.v2,this.scale.v3);
         var xRotationMatrix = M4.rotationX(deg2rad(this.rotation.v1));
         var yRotationMatrix = M4.rotationY(deg2rad(this.rotation.v2));
@@ -39,6 +36,12 @@ export class CarLight implements ILight, IRenderObject {
         modelMatrix = M4.multiply(modelMatrix,xRotationMatrix);
         modelMatrix = M4.multiply(modelMatrix,translationMatrix);
         this.modelMatrix = modelMatrix;
+        this.cahcedModelMatrix = modelMatrix;
+    }
+
+    setInitialModelMatrix() {
+        this.modelMatrix = this.cahcedModelMatrix;
+        this.location = this.getPosition();
     }
 
     getPosition(): Vec3 {
